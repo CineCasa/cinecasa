@@ -14,7 +14,147 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      movies: {
+        Row: {
+          category: string | null
+          description: string | null
+          id: number
+          poster: string | null
+          rating: string | null
+          titulo: string
+          tmdb_id: string | null
+          trailer: string | null
+          type: string | null
+          url: string | null
+          year: string | null
+        }
+        Insert: {
+          category?: string | null
+          description?: string | null
+          id?: number
+          poster?: string | null
+          rating?: string | null
+          titulo: string
+          tmdb_id?: string | null
+          trailer?: string | null
+          type?: string | null
+          url?: string | null
+          year?: string | null
+        }
+        Update: {
+          category?: string | null
+          description?: string | null
+          id?: number
+          poster?: string | null
+          rating?: string | null
+          titulo?: string
+          tmdb_id?: string | null
+          trailer?: string | null
+          type?: string | null
+          url?: string | null
+          year?: string | null
+        }
+        Relationships: []
+      }
+      movies_kids: {
+        Row: {
+          description: string | null
+          genero: string | null
+          id: number
+          poster: string | null
+          rating: string | null
+          titulo: string
+          type: string | null
+          url: string | null
+          year: string | null
+        }
+        Insert: {
+          description?: string | null
+          genero?: string | null
+          id?: number
+          poster?: string | null
+          rating?: string | null
+          titulo: string
+          type?: string | null
+          url?: string | null
+          year?: string | null
+        }
+        Update: {
+          description?: string | null
+          genero?: string | null
+          id?: number
+          poster?: string | null
+          rating?: string | null
+          titulo?: string
+          type?: string | null
+          url?: string | null
+          year?: string | null
+        }
+        Relationships: []
+      }
+      series: {
+        Row: {
+          id: number
+          identificador_archive: string | null
+          titulo: string
+          tmdb_id: string | null
+          trailer: string | null
+          type: string | null
+        }
+        Insert: {
+          id?: number
+          identificador_archive?: string | null
+          titulo: string
+          tmdb_id?: string | null
+          trailer?: string | null
+          type?: string | null
+        }
+        Update: {
+          id?: number
+          identificador_archive?: string | null
+          titulo?: string
+          tmdb_id?: string | null
+          trailer?: string | null
+          type?: string | null
+        }
+        Relationships: []
+      }
+      series_kids: {
+        Row: {
+          description: string | null
+          genero: string | null
+          id: number
+          identificador_archive: string | null
+          poster: string | null
+          rating: string | null
+          titulo: string
+          type: string | null
+          year: string | null
+        }
+        Insert: {
+          description?: string | null
+          genero?: string | null
+          id?: number
+          identificador_archive?: string | null
+          poster?: string | null
+          rating?: string | null
+          titulo: string
+          type?: string | null
+          year?: string | null
+        }
+        Update: {
+          description?: string | null
+          genero?: string | null
+          id?: number
+          identificador_archive?: string | null
+          poster?: string | null
+          rating?: string | null
+          titulo?: string
+          type?: string | null
+          year?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
