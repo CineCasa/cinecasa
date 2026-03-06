@@ -15,16 +15,16 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    const { table, raw_json } = await req.json();
+    const body = await req.json();
+    const table = body.table;
+    const data = body.data || (body.raw_json ? JSON.parse(body.raw_json) : null);
 
-    if (!table || !raw_json) {
-      return new Response(JSON.stringify({ error: "Missing table or raw_json" }), {
+    if (!table || !data || !Array.isArray(data)) {
+      return new Response(JSON.stringify({ error: "Missing table or data" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    const data = JSON.parse(raw_json);
 
     const mapped = data.map((item: any) => {
       if (table === "movies") {
@@ -76,7 +76,6 @@ Deno.serve(async (req) => {
       return item;
     });
 
-    // Insert in batches of 50
     const batchSize = 50;
     let inserted = 0;
     const errors: string[] = [];
