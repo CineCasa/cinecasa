@@ -1,13 +1,5 @@
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 
-// Import JSON data
-import filmesData from "@/temp/filmes-2.json";
-import filmesKidsData from "@/temp/filmeskids-2.json";
-import seriesData from "@/temp/series-3.json";
-import seriesKidsData from "@/temp/serieskids-3.json";
-
-// Parse M3U data
 const tvChannels = [
   { nome: "SBT HD", url: "https://cdn.jmvstream.com/w/LVW-10801/LVW10801_Xvg4R0u57n/playlist.m3u8", logo: "https://i.imgur.com/Jgbq3CC.jpeg", grupo: "ABERTOS" },
   { nome: "Record TV", url: "https://cdn.jmvstream.com/w/LVW-10842/LVW10842_513N26MDBL/playlist.m3u8", logo: "https://i.imgur.com/zaTvGQW.jpeg", grupo: "ABERTOS" },
@@ -54,6 +46,55 @@ const tvChannels = [
 
 const BATCH_SIZE = 30;
 
+function sanitizeJsonText(text: string): string {
+  // Remove non-JSON content (like separator lines and text headers)
+  // Split into potential JSON array segments and merge
+  let cleaned = text.trim();
+  
+  // Handle files with two arrays separated by garbage text
+  // Find the pattern: ] ... garbage ... { and replace with ,
+  cleaned = cleaned.replace(/\]\s*[\s\S]*?_+[\s\S]*?(?=\{)/g, ',');
+  
+  // Remove any remaining non-JSON lines between objects
+  cleaned = cleaned.replace(/,\s*([A-ZÀ-Ú][^\n{]*)\n/gi, ',\n');
+  
+  // Ensure it starts with [ and ends with ]
+  if (!cleaned.startsWith('[')) cleaned = '[' + cleaned;
+  if (!cleaned.endsWith(']')) cleaned = cleaned + ']';
+  
+  // Fix trailing commas before ]
+  cleaned = cleaned.replace(/,\s*\]/g, ']');
+  
+  return cleaned;
+}
+
+async function fetchAndParseJson(url: string): Promise<any[]> {
+  const res = await fetch(url);
+  const text = await res.text();
+  
+  try {
+    return JSON.parse(text);
+  } catch {
+    // Try sanitizing
+    const sanitized = sanitizeJsonText(text);
+    try {
+      return JSON.parse(sanitized);
+    } catch (e2) {
+      // Last resort: extract individual objects with regex
+      const objects: any[] = [];
+      const regex = /\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/g;
+      let match;
+      while ((match = regex.exec(text)) !== null) {
+        try {
+          objects.push(JSON.parse(match[0]));
+        } catch { /* skip invalid */ }
+      }
+      if (objects.length === 0) throw new Error(`Could not parse JSON from ${url}: ${e2}`);
+      return objects;
+    }
+  }
+}
+
 async function insertBatch(table: string, data: any[]) {
   const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID || "eqhstnlsmfrwxhvcwoid";
   const url = `https://${projectId}.supabase.co/functions/v1/bulk-insert`;
@@ -90,43 +131,57 @@ export default function DataLoader() {
     setLoading(true);
     setLog([]);
 
-    // Cinema
-    addLog(`Inserindo ${filmesData.length} filmes na tabela cinema...`);
-    const r1 = await insertBatch("cinema", filmesData as any[]);
-    addLog(`Cinema: ${r1.inserted}/${r1.total} inseridos. Erros: ${r1.errors.length}`);
-    if (r1.errors.length) r1.errors.forEach(e => addLog(`  ❌ ${e}`));
+    try {
+      // Cinema
+      addLog("Carregando filmes-2.json...");
+      const filmesData = await fetchAndParseJson("/data/filmes-2.json");
+      addLog(`Parsed ${filmesData.length} filmes. Inserindo na tabela cinema...`);
+      const r1 = await insertBatch("cinema", filmesData);
+      addLog(`✅ Cinema: ${r1.inserted}/${r1.total} inseridos. Erros: ${r1.errors.length}`);
+      if (r1.errors.length) r1.errors.forEach(e => addLog(`  ❌ ${e}`));
 
-    // Filmes Kids
-    addLog(`Inserindo ${filmesKidsData.length} filmes kids...`);
-    const r2 = await insertBatch("filmes_kids", filmesKidsData as any[]);
-    addLog(`Filmes Kids: ${r2.inserted}/${r2.total} inseridos. Erros: ${r2.errors.length}`);
-    if (r2.errors.length) r2.errors.forEach(e => addLog(`  ❌ ${e}`));
+      // Filmes Kids
+      addLog("Carregando filmeskids-2.json...");
+      const filmesKidsData = await fetchAndParseJson("/data/filmeskids-2.json");
+      addLog(`Parsed ${filmesKidsData.length} filmes kids. Inserindo...`);
+      const r2 = await insertBatch("filmes_kids", filmesKidsData);
+      addLog(`✅ Filmes Kids: ${r2.inserted}/${r2.total} inseridos. Erros: ${r2.errors.length}`);
+      if (r2.errors.length) r2.errors.forEach(e => addLog(`  ❌ ${e}`));
 
-    // Series
-    addLog(`Inserindo ${seriesData.length} séries...`);
-    const r3 = await insertBatch("series", seriesData as any[]);
-    addLog(`Séries: ${r3.inserted}/${r3.total} inseridos. Erros: ${r3.errors.length}`);
-    if (r3.errors.length) r3.errors.forEach(e => addLog(`  ❌ ${e}`));
+      // Series
+      addLog("Carregando series-3.json...");
+      const seriesData = await fetchAndParseJson("/data/series-3.json");
+      addLog(`Parsed ${seriesData.length} séries. Inserindo...`);
+      const r3 = await insertBatch("series", seriesData);
+      addLog(`✅ Séries: ${r3.inserted}/${r3.total} inseridos. Erros: ${r3.errors.length}`);
+      if (r3.errors.length) r3.errors.forEach(e => addLog(`  ❌ ${e}`));
 
-    // Series Kids
-    addLog(`Inserindo ${seriesKidsData.length} séries kids...`);
-    const r4 = await insertBatch("series_kids", seriesKidsData as any[]);
-    addLog(`Séries Kids: ${r4.inserted}/${r4.total} inseridos. Erros: ${r4.errors.length}`);
-    if (r4.errors.length) r4.errors.forEach(e => addLog(`  ❌ ${e}`));
+      // Series Kids
+      addLog("Carregando serieskids-3.json...");
+      const seriesKidsData = await fetchAndParseJson("/data/serieskids-3.json");
+      addLog(`Parsed ${seriesKidsData.length} séries kids. Inserindo...`);
+      const r4 = await insertBatch("series_kids", seriesKidsData);
+      addLog(`✅ Séries Kids: ${r4.inserted}/${r4.total} inseridos. Erros: ${r4.errors.length}`);
+      if (r4.errors.length) r4.errors.forEach(e => addLog(`  ❌ ${e}`));
 
-    // TV ao Vivo
-    addLog(`Inserindo ${tvChannels.length} canais ao vivo...`);
-    const r5 = await insertBatch("tv_ao_vivo", tvChannels);
-    addLog(`TV ao Vivo: ${r5.inserted}/${r5.total} inseridos. Erros: ${r5.errors.length}`);
-    if (r5.errors.length) r5.errors.forEach(e => addLog(`  ❌ ${e}`));
+      // TV ao Vivo
+      addLog(`Inserindo ${tvChannels.length} canais ao vivo...`);
+      const r5 = await insertBatch("tv_ao_vivo", tvChannels);
+      addLog(`✅ TV ao Vivo: ${r5.inserted}/${r5.total} inseridos. Erros: ${r5.errors.length}`);
+      if (r5.errors.length) r5.errors.forEach(e => addLog(`  ❌ ${e}`));
 
-    addLog("✅ Concluído!");
+      addLog("🎉 Concluído!");
+    } catch (e) {
+      addLog(`💥 Erro fatal: ${String(e)}`);
+    }
+    
     setLoading(false);
   };
 
   return (
     <div style={{ background: "#000", color: "#fff", minHeight: "100vh", padding: "2rem", fontFamily: "monospace" }}>
       <h1 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>CineCasa - Data Loader</h1>
+      <p style={{ marginBottom: "1rem", opacity: 0.7 }}>Carrega os dados dos arquivos JSON para o Supabase via edge function.</p>
       <button
         onClick={loadAll}
         disabled={loading}
@@ -141,7 +196,7 @@ export default function DataLoader() {
           marginBottom: "1rem",
         }}
       >
-        {loading ? "Carregando..." : "🚀 Inserir Todos os Dados"}
+        {loading ? "⏳ Carregando..." : "🚀 Inserir Todos os Dados"}
       </button>
       <div style={{ background: "#111", padding: "1rem", borderRadius: "8px", maxHeight: "70vh", overflow: "auto" }}>
         {log.map((l, i) => (
