@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { Play, Plus, ThumbsUp, Heart, Volume2, VolumeX } from "lucide-react";
+import { Play, Plus, ThumbsUp, Heart, Volume2, VolumeX, Info } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { ContentItem } from "@/data/content";
 import { motion, AnimatePresence } from "framer-motion";
 import { fetchTmdbDetails, getTmdbTrailerUrl } from "@/services/tmdb";
@@ -20,6 +21,13 @@ const ContentCard = ({ item, index, isLast }: ContentCardProps) => {
   const [isPlayerOpen, setIsPlayerOpen] = useState(false);
   const hoverTimeout = useRef<NodeJS.Timeout | null>(null);
   const trailerLoadTimeout = useRef<NodeJS.Timeout | null>(null);
+  const navigate = useNavigate();
+
+  const handleNavigateToDetails = () => {
+    const typePath = item.id.includes("series") ? "series" : "cinema";
+    // If the item doesn't have a tmdbId, we might pass its ID
+    navigate(`/details/${typePath}/${item.tmdbId || item.id}`);
+  };
 
   useEffect(() => {
     if (isHovered && item.tmdbId && !metadata) {
@@ -168,8 +176,12 @@ const ContentCard = ({ item, index, isLast }: ContentCardProps) => {
                   <button className="p-2 rounded-full border border-white/40 text-white hover:bg-white/10 transition-colors">
                     <Plus size={16} />
                   </button>
-                  <button className="p-2 rounded-full border border-white/40 text-white hover:bg-white/10 transition-colors">
-                    <ThumbsUp size={16} />
+                  <button 
+                    onClick={handleNavigateToDetails}
+                    className="p-2 rounded-full border border-white/40 text-white hover:bg-white/10 transition-colors"
+                    title="Mais Informações"
+                  >
+                    <Info size={16} />
                   </button>
                 </div>
                 <button 

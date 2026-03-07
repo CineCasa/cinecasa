@@ -21,6 +21,19 @@ export const fetchTmdbDetails = async (tmdbId: string, type: "movie" | "tv") => 
   }
 };
 
+export const fetchTmdbSeason = async (tmdbId: string, seasonNumber: number) => {
+  try {
+    const res = await fetch(
+      `${TMDB_BASE_URL}/tv/${tmdbId}/season/${seasonNumber}?api_key=${TMDB_API_KEY}&language=pt-BR`
+    );
+    if (!res.ok) return null;
+    return res.json();
+  } catch (error) {
+    console.error(`Error fetching TMDB season ${seasonNumber}:`, error);
+    return null;
+  }
+};
+
 export const fetchTmdbMovie = async (tmdbId: string) => {
   return fetchTmdbDetails(tmdbId, "movie");
 };

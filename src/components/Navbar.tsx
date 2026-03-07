@@ -27,30 +27,41 @@ const Navbar = () => {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled ? "bg-black/95 backdrop-blur-md shadow-2xl" : "bg-gradient-to-b from-black/90 to-transparent"
+      className={`fixed top-0 left-0 right-0 z-50 transition-colors duration-300 font-sans ${
+        scrolled ? "bg-[#0f171e] shadow-xl border-b border-white/5" : "bg-gradient-to-b from-[#0f171e]/90 to-transparent"
       }`}
     >
-      <div className="flex items-center justify-between px-4 md:px-8 lg:px-12 h-16">
-        {/* Logo */}
-        <div className="flex items-center gap-8">
-          <h1 className="text-2xl font-black tracking-tight text-primary">
-            STREAM<span className="text-foreground">+</span>
-          </h1>
+      <div className="flex items-center justify-between px-4 sm:px-6 md:px-8 lg:px-12 h-16 sm:h-20">
+        {/* Logo and Main Nav Desktop */}
+        <div className="flex items-center gap-6 md:gap-10">
+          {/* Mobile menu toggle (Left side on Prime Video) */}
+          <button
+            className="p-1 -ml-1 text-white/80 hover:text-white transition-colors lg:hidden focus-visible rounded-sm"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
+          </button>
+
+          <Link to="/" className="text-2xl sm:text-3xl font-black tracking-tight text-[#00A8E1] hover:text-white transition-colors flex items-center min-w-max">
+            STREAM<span className="text-white">+</span>
+          </Link>
 
           {/* Desktop Nav */}
-          <ul className="hidden lg:flex items-center gap-10">
+          <ul className="hidden lg:flex items-center gap-6">
             {navItems.map((item) => {
               const isActive = location.pathname === item.path;
               return (
-                <li key={item.path} className="relative py-2">
+                <li key={item.path} className="relative">
                   <Link 
                     to={item.path}
-                    className={`text-lg font-bold transition-all hover:scale-105 ${
-                      isActive ? "text-primary border-b-2 border-primary pb-1" : "text-white/80 hover:text-white"
+                    className={`text-[17px] font-semibold transition-colors px-2 py-1 rounded-md focus-visible ${
+                      isActive ? "text-white" : "text-[#aaaaaa] hover:text-white hover:bg-white/5"
                     }`}
                   >
                     {item.label}
+                    {isActive && (
+                      <span className="absolute -bottom-[22px] left-0 right-0 h-1 bg-white rounded-t-md" />
+                    )}
                   </Link>
                 </li>
               );
@@ -59,57 +70,54 @@ const Navbar = () => {
         </div>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-4 text-[#aaaaaa]">
           {/* Search */}
-          <div className={`flex items-center transition-all duration-300 ${searchOpen ? "bg-secondary rounded-md" : ""}`}>
+          <div className="flex items-center border border-transparent hover:border-white/20 hover:bg-white/5 rounded-full transition-all px-1 sm:px-2 py-1 focus-within:border-white/40 focus-within:bg-white/5">
             {searchOpen && (
               <input
                 autoFocus
-                placeholder="Títulos, pessoas, gêneros"
-                className="bg-transparent text-sm text-foreground placeholder:text-muted-foreground px-3 py-1.5 w-40 md:w-64 outline-none"
-                onBlur={() => setSearchOpen(false)}
+                placeholder="Busca"
+                className="bg-transparent text-sm sm:text-base text-white placeholder:text-[#aaaaaa] px-2 py-1 w-28 sm:w-48 outline-none"
+                onBlur={() => {
+                  // Small delay to allow click on search icon to register
+                  setTimeout(() => setSearchOpen(false), 200);
+                }}
               />
             )}
             <button
               onClick={() => setSearchOpen(!searchOpen)}
-              className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+              className="p-2 text-white/80 hover:text-white transition-colors rounded-full focus-visible"
             >
-              <Search size={20} />
+              <Search size={22} />
             </button>
           </div>
 
-          <button className="p-2 text-muted-foreground hover:text-foreground transition-colors hidden sm:block">
-            <Bell size={20} />
-          </button>
-          <button className="p-2 text-muted-foreground hover:text-foreground transition-colors">
-            <User size={20} />
-          </button>
-
-          {/* Mobile menu toggle */}
-          <button
-            className="p-2 text-muted-foreground hover:text-foreground transition-colors lg:hidden"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+          <button className="p-2 text-white/80 hover:text-white transition-colors rounded-full focus-visible">
+            <User size={26} />
           </button>
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu Slide-down Prime Style */}
       {mobileMenuOpen && (
-        <div className="lg:hidden bg-background/98 backdrop-blur-lg border-t border-border">
-          <ul className="flex flex-col p-4 gap-1">
-            {navItems.map((item) => (
-              <li key={item.path}>
-                <Link
-                  to={item.path}
-                  className="w-full text-left text-lg font-semibold text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md px-3 py-3 transition-colors block"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {item.label}
-                </Link>
-              </li>
-            ))}
+        <div className="lg:hidden bg-[#19232b] absolute top-[100%] left-0 w-full shadow-2xl border-b border-white/5">
+          <ul className="flex flex-col p-2 gap-1 max-h-[70vh] overflow-y-auto">
+            {navItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <li key={item.path}>
+                  <Link
+                    to={item.path}
+                    className={`w-full text-left text-lg font-semibold px-4 py-3 rounded-lg transition-colors block ${
+                      isActive ? "bg-white/10 text-white" : "text-[#aaaaaa] hover:text-white hover:bg-white/5"
+                    }`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}

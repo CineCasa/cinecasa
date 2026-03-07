@@ -3,6 +3,7 @@ import { Play, Info, Volume2, VolumeX } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSupabaseContent } from "@/hooks/useSupabaseContent";
 import { fetchTmdbDetails, getTmdbTrailerUrl, tmdbImageUrl } from "@/services/tmdb";
+import { useNavigate } from "react-router-dom";
 
 interface HeroBannerProps {
   filterCategory?: string;
@@ -14,6 +15,7 @@ const HeroBanner = ({ filterCategory }: HeroBannerProps) => {
   const [trailerUrl, setTrailerUrl] = useState<string | null>(null);
   const { data: categories, isLoading } = useSupabaseContent();
   const trailerTimeout = useRef<NodeJS.Timeout | null>(null);
+  const navigate = useNavigate();
 
   const filteredItems = filterCategory 
     ? categories?.find(cat => cat.title.toLowerCase().includes(filterCategory.toLowerCase()))?.items || []
@@ -141,7 +143,10 @@ const HeroBanner = ({ filterCategory }: HeroBannerProps) => {
               <button className="flex items-center gap-3 bg-white hover:bg-white/90 text-black px-6 sm:px-8 py-3 sm:py-4 rounded-md font-bold text-base sm:text-lg transition-transform hover:scale-105 active:scale-95 shadow-xl">
                 <Play size={24} fill="currentColor" /> Assistir Agora
               </button>
-              <button className="flex items-center gap-3 bg-white/20 hover:bg-white/30 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-md font-bold text-base sm:text-lg transition-all backdrop-blur-md border border-white/20">
+              <button 
+                onClick={() => navigate(`/details/${hero.id.includes("series") ? "series" : "cinema"}/${hero.tmdbId || hero.id}`)}
+                className="flex items-center gap-3 bg-white/20 hover:bg-white/30 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-md font-bold text-base sm:text-lg transition-all backdrop-blur-md border border-white/20 hover:scale-105 focus-visible"
+              >
                 <Info size={24} /> Mais Informações
               </button>
             </div>

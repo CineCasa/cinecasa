@@ -11,6 +11,7 @@ import TvAoVivo from "./pages/TvAoVivo";
 import FilmesKids from "./pages/FilmesKids";
 import SeriesKids from "./pages/SeriesKids";
 import DataLoader from "./pages/DataLoader";
+import Details from "./pages/Details";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -45,6 +46,7 @@ const App = () => (
             <Route path="/tv-live" element={<TvAoVivo />} />
             <Route path="/kids-movies" element={<FilmesKids />} />
             <Route path="/kids-series" element={<SeriesKids />} />
+            <Route path="/details/:type/:id" element={<Details />} />
             <Route path="/admin/data-loader" element={<DataLoader />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
