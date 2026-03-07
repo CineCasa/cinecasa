@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Category } from "@/data/content";
 import ContentCard from "./ContentCard";
@@ -12,12 +12,38 @@ const ContentRow = ({ category }: ContentRowProps) => {
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
+  // Triplicar itens para efeito de scroll infinito real
+  const infiniteItems = [...category.items, ...category.items, ...category.items];
+
   const checkScroll = () => {
     const el = scrollRef.current;
     if (!el) return;
+
+    const scrollLeft = el.scrollLeft;
+    const scrollWidth = el.scrollWidth;
+    const clientWidth = el.clientWidth;
+    const singleSetWidth = scrollWidth / 3;
+
+    // Se o usuário chegar perto do início do primeiro set, pula pro início do segundo
+    if (scrollLeft < 100) {
+      el.scrollLeft = singleSetWidth + scrollLeft;
+    }
+    // Se o usuário chegar no final do terceiro set, pula pro início do segundo
+    else if (scrollLeft > scrollWidth - clientWidth - 100) {
+      el.scrollLeft = scrollLeft - singleSetWidth;
+    }
+
     setCanScrollLeft(el.scrollLeft > 10);
     setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 10);
   };
+
+  useEffect(() => {
+    // Iniciar no meio (segundo set de itens)
+    const el = scrollRef.current;
+    if (el) {
+       el.scrollLeft = el.scrollWidth / 3;
+    }
+  }, []);
 
   const scroll = (dir: number) => {
     const el = scrollRef.current;
@@ -28,42 +54,47 @@ const ContentRow = ({ category }: ContentRowProps) => {
   };
 
   return (
-    <section className="relative group/row mb-6 md:mb-8">
-      <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-foreground px-4 md:px-8 lg:px-12 mb-3">
+    <section className="relative group/row mb-2 md:mb-4 z-10 hover:z-[60] transition-all duration-300">
+      <h2 className="text-[32px] md:text-[40px] lg:text-[48px] font-black text-white px-4 md:px-8 lg:px-12 mb-6 tracking-tight drop-shadow-lg text-shadow-premium">
         {category.title}
       </h2>
 
-      <div className="relative">
+      <div className="relative isolate">
         {/* Left arrow */}
-        {canScrollLeft && (
-          <button
-            onClick={() => scroll(-1)}
-            className="absolute left-0 top-0 bottom-8 w-10 md:w-12 z-10 flex items-center justify-center bg-background/60 hover:bg-background/80 opacity-0 group-hover/row:opacity-100 transition-opacity"
-          >
-            <ChevronLeft size={28} className="text-foreground" />
-          </button>
-        )}
+        <button
+          onClick={() => scroll(-1)}
+          className="absolute left-0 top-0 bottom-0 w-12 md:w-16 z-[70] flex items-center justify-center bg-black/60 hover:bg-black/80 opacity-0 group-hover/row:opacity-100 transition-opacity"
+        >
+          <ChevronLeft size={40} className="text-white" />
+        </button>
 
         {/* Scrollable row */}
         <div
           ref={scrollRef}
           onScroll={checkScroll}
-          className="flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide px-4 md:px-8 lg:px-12"
+          className="flex gap-4 md:gap-6 overflow-x-auto scrollbar-hide px-4 md:px-8 lg:px-12 py-24 -my-24 overflow-y-visible focus:outline-none"
+          style={{ 
+            scrollSnapType: "x mandatory",
+            paddingInline: "6vw",
+          }}
         >
-          {category.items.map((item) => (
-            <ContentCard key={item.id} item={item} />
+          {infiniteItems.map((item, idx) => (
+            <ContentCard 
+              key={`${item.id}-${idx}`} 
+              item={item} 
+              index={idx} 
+              isLast={idx === infiniteItems.length - 1} 
+            />
           ))}
         </div>
 
         {/* Right arrow */}
-        {canScrollRight && (
-          <button
-            onClick={() => scroll(1)}
-            className="absolute right-0 top-0 bottom-8 w-10 md:w-12 z-10 flex items-center justify-center bg-background/60 hover:bg-background/80 opacity-0 group-hover/row:opacity-100 transition-opacity"
-          >
-            <ChevronRight size={28} className="text-foreground" />
-          </button>
-        )}
+        <button
+          onClick={() => scroll(1)}
+          className="absolute right-0 top-0 bottom-0 w-12 md:w-16 z-[70] flex items-center justify-center bg-black/60 hover:bg-black/80 opacity-0 group-hover/row:opacity-100 transition-opacity"
+        >
+          <ChevronRight size={40} className="text-white" />
+        </button>
       </div>
     </section>
   );

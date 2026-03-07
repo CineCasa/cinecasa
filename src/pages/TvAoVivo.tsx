@@ -1,26 +1,27 @@
 import Navbar from "@/components/Navbar";
-import HeroBanner from "@/components/HeroBanner";
 import ContentRow from "@/components/ContentRow";
 import Footer from "@/components/Footer";
 import { useSupabaseContent } from "@/hooks/useSupabaseContent";
 
-const Index = () => {
+const TvAoVivo = () => {
   const { data: categories, isLoading } = useSupabaseContent();
+
+  const tvCategories = categories?.filter(cat => cat.id === "tv-live") || [];
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <main className="pb-20">
-        <HeroBanner />
-        <div className="relative z-10 pt-16 -mt-10">
+      <main className="pt-24 px-4 md:px-8 lg:px-12">
+        <h1 className="text-3xl md:text-4xl font-black mb-8">TV ao Vivo</h1>
+        <div>
           {isLoading ? (
             <div className="flex items-center justify-center p-20 text-muted-foreground">
-              Carregando conteúdos...
+              Sintonizando canais...
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center p-20 text-muted-foreground italic">
-              Adicione novas seções aqui...
-            </div>
+            tvCategories.map((cat) => (
+              <ContentRow key={cat.id} category={cat} />
+            ))
           )}
         </div>
       </main>
@@ -29,4 +30,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+export default TvAoVivo;

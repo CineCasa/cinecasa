@@ -1,11 +1,23 @@
 import { useState, useEffect } from "react";
 import { Search, Bell, User, Menu, X } from "lucide-react";
-import { navCategories } from "@/data/content";
+import { Link, useLocation } from "react-router-dom";
+
+const navItems = [
+  { label: "Início", path: "/" },
+  { label: "Cinema", path: "/cinema" },
+  { label: "Séries", path: "/series" },
+  { label: "Tv ao Vivo", path: "/tv-live" },
+  { label: "Filmes Kids", path: "/kids-movies" },
+  { label: "Séries Kids", path: "/kids-series" },
+  { label: "Meus Favoritos", path: "/favorites" },
+];
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+
+  const location = useLocation();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -16,7 +28,7 @@ const Navbar = () => {
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled ? "bg-background/95 backdrop-blur-md shadow-lg" : "gradient-nav"
+        scrolled ? "bg-black/95 backdrop-blur-md shadow-2xl" : "bg-gradient-to-b from-black/90 to-transparent"
       }`}
     >
       <div className="flex items-center justify-between px-4 md:px-8 lg:px-12 h-16">
@@ -27,14 +39,22 @@ const Navbar = () => {
           </h1>
 
           {/* Desktop Nav */}
-          <ul className="hidden lg:flex items-center gap-6">
-            {navCategories.map((cat) => (
-              <li key={cat}>
-                <button className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                  {cat}
-                </button>
-              </li>
-            ))}
+          <ul className="hidden lg:flex items-center gap-10">
+            {navItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <li key={item.path} className="relative py-2">
+                  <Link 
+                    to={item.path}
+                    className={`text-lg font-bold transition-all hover:scale-105 ${
+                      isActive ? "text-primary border-b-2 border-primary pb-1" : "text-white/80 hover:text-white"
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </div>
 
@@ -79,14 +99,15 @@ const Navbar = () => {
       {mobileMenuOpen && (
         <div className="lg:hidden bg-background/98 backdrop-blur-lg border-t border-border">
           <ul className="flex flex-col p-4 gap-1">
-            {navCategories.map((cat) => (
-              <li key={cat}>
-                <button
-                  className="w-full text-left text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md px-3 py-2.5 transition-colors"
+            {navItems.map((item) => (
+              <li key={item.path}>
+                <Link
+                  to={item.path}
+                  className="w-full text-left text-lg font-semibold text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md px-3 py-3 transition-colors block"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  {cat}
-                </button>
+                  {item.label}
+                </Link>
               </li>
             ))}
           </ul>

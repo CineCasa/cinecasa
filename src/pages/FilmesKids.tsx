@@ -4,23 +4,25 @@ import ContentRow from "@/components/ContentRow";
 import Footer from "@/components/Footer";
 import { useSupabaseContent } from "@/hooks/useSupabaseContent";
 
-const Index = () => {
+const FilmesKids = () => {
   const { data: categories, isLoading } = useSupabaseContent();
+
+  const kidsMovies = categories?.filter(cat => cat.id === "kids-movies") || [];
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       <main className="pb-20">
-        <HeroBanner />
+        <HeroBanner filterCategory="Filmes Infantis" />
         <div className="relative z-10 pt-16 -mt-10">
           {isLoading ? (
             <div className="flex items-center justify-center p-20 text-muted-foreground">
-              Carregando conteúdos...
+              Carregando filmes para a criançada...
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center p-20 text-muted-foreground italic">
-              Adicione novas seções aqui...
-            </div>
+            kidsMovies.map((cat) => (
+              <ContentRow key={cat.id} category={cat} />
+            ))
           )}
         </div>
       </main>
@@ -29,4 +31,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+export default FilmesKids;

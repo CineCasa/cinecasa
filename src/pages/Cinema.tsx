@@ -4,23 +4,27 @@ import ContentRow from "@/components/ContentRow";
 import Footer from "@/components/Footer";
 import { useSupabaseContent } from "@/hooks/useSupabaseContent";
 
-const Index = () => {
+const Cinema = () => {
   const { data: categories, isLoading } = useSupabaseContent();
+
+  // Filtra apenas categorias que começam com "cinema-" (definido no hook)
+  // As categorias agora seguem o padrão centralizado do hook
+  const cinemaCategories = categories?.filter(cat => cat.id.startsWith("cinema-")) || [];
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       <main className="pb-20">
-        <HeroBanner />
+        <HeroBanner filterCategory="Cinema" />
         <div className="relative z-10 pt-16 -mt-10">
           {isLoading ? (
             <div className="flex items-center justify-center p-20 text-muted-foreground">
-              Carregando conteúdos...
+              Carregando produções de cinema...
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center p-20 text-muted-foreground italic">
-              Adicione novas seções aqui...
-            </div>
+            cinemaCategories.map((cat) => (
+              <ContentRow key={cat.id} category={cat} />
+            ))
           )}
         </div>
       </main>
@@ -29,4 +33,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+export default Cinema;

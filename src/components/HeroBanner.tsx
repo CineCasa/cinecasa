@@ -1,17 +1,81 @@
-import { useState, useEffect } from "react";
-import { Play, Info, ChevronLeft, ChevronRight } from "lucide-react";
-import { heroItems } from "@/data/content";
+import { useState, useEffect, useRef } from "react";
+import { Play, Info, Volume2, VolumeX } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSupabaseContent } from "@/hooks/useSupabaseContent";
+import { fetchTmdbDetails, getTmdbTrailerUrl, tmdbImageUrl } from "@/services/tmdb";
 
-const HeroBanner = () => {
+interface HeroBannerProps {
+  filterCategory?: string;
+}
+
+const HeroBanner = ({ filterCategory }: HeroBannerProps) => {
   const [current, setCurrent] = useState(0);
+  const [showTrailer, setShowTrailer] = useState(false);
+  const [trailerUrl, setTrailerUrl] = useState<string | null>(null);
+  const { data: categories, isLoading } = useSupabaseContent();
+  const trailerTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  const filteredItems = filterCategory 
+    ? categories?.find(cat => cat.title.toLowerCase().includes(filterCategory.toLowerCase()))?.items || []
+    : categories?.flatMap(cat => cat.items.slice(0, 2)) || [];
+
+  const heroItems = filteredItems.slice(0, 6);
+
+  const [currentHeroData, setCurrentHeroData] = useState<any>(null);
 
   useEffect(() => {
+    if (heroItems.length === 0) return;
+    
+    setShowTrailer(false);
+    setTrailerUrl(null);
+    setCurrentHeroData(null);
+    if (trailerTimeout.current) clearTimeout(trailerTimeout.current);
+
+    const hero = heroItems[current];
+    
+    const loadDetails = async () => {
+      if (hero.tmdbId) {
+        const type = hero.id.includes("series") ? "tv" : "movie";
+        const data = await fetchTmdbDetails(hero.tmdbId, type);
+        if (data) {
+          setCurrentHeroData(data);
+          const url = getTmdbTrailerUrl(data.videos);
+          setTrailerUrl(url);
+          
+          trailerTimeout.current = setTimeout(() => {
+            setShowTrailer(true);
+          }, 300);
+        }
+      } else if (hero.trailer) {
+        trailerTimeout.current = setTimeout(() => {
+          setTrailerUrl(hero.trailer);
+          setShowTrailer(true);
+        }, 300);
+      }
+    };
+
+    loadDetails();
+
+    return () => {
+      if (trailerTimeout.current) clearTimeout(trailerTimeout.current);
+    };
+  }, [current, heroItems.length]);
+
+  useEffect(() => {
+    if (heroItems.length <= 1) return;
     const timer = setInterval(() => {
       setCurrent((prev) => (prev + 1) % heroItems.length);
-    }, 8000);
+    }, 15000); // More time for trailers
     return () => clearInterval(timer);
-  }, []);
+  }, [heroItems.length]);
+
+  if (isLoading || heroItems.length === 0) {
+    return (
+      <section className="relative w-full h-[60vh] sm:h-[70vh] md:h-[80vh] lg:h-[85vh] bg-muted animate-pulse flex items-center justify-center">
+        <span className="text-muted-foreground">Carregando...</span>
+      </section>
+    );
+  }
 
   const hero = heroItems[current];
   const goTo = (dir: number) =>
@@ -28,18 +92,28 @@ const HeroBanner = () => {
           transition={{ duration: 0.8 }}
           className="absolute inset-0"
         >
-          <img
-            src={hero.image}
-            alt={hero.title}
-            className="w-full h-full object-cover object-top"
-            loading="eager"
-          />
+          {showTrailer && trailerUrl ? (
+            <div className="absolute inset-0 scale-[1.3] pointer-events-none">
+              <iframe
+                src={`${trailerUrl}&controls=0&showinfo=0&rel=0&iv_load_policy=3&modestbranding=1&enablejsapi=1`}
+                className="w-full h-full object-cover"
+                allow="autoplay; encrypted-media"
+              />
+            </div>
+          ) : (
+            <img
+              src={currentHeroData?.backdrop_path ? tmdbImageUrl(currentHeroData.backdrop_path, "original") : (hero.backdrop || hero.image)}
+              alt={hero.title}
+              className="w-full h-full object-cover object-center scale-105"
+              loading="eager"
+            />
+          )}
         </motion.div>
       </AnimatePresence>
 
       {/* Gradients */}
-      <div className="absolute inset-0 gradient-hero-bottom" />
-      <div className="absolute inset-0 gradient-hero-left" />
+      <div className="absolute inset-0 gradient-hero-bottom z-[1]" />
+      <div className="absolute inset-0 gradient-hero-left z-[1]" />
 
       {/* Content */}
       <div className="absolute bottom-[15%] sm:bottom-[20%] left-0 px-4 md:px-8 lg:px-12 max-w-2xl z-10">
@@ -51,49 +125,41 @@ const HeroBanner = () => {
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <p className="text-xs sm:text-sm font-medium text-muted-foreground mb-2">
-              {hero.genre} • {hero.year} • {hero.rating}
+            <p className="text-xs sm:text-sm font-bold text-muted-foreground mb-2 flex items-center gap-2 text-shadow-premium">
+              <span className="text-primary">Novo</span>
+              <span>• {hero.genre.join(" • ")}</span>
+              <span>• {hero.year}</span>
+              <span className="text-[#ffff5c]">{hero.rating}</span>
             </p>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-foreground mb-3 leading-tight">
+            <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white mb-4 leading-tight drop-shadow-2xl text-shadow-premium">
               {hero.title}
             </h2>
-            <p className="text-sm sm:text-base text-muted-foreground mb-6 line-clamp-2 md:line-clamp-3">
+            <p className="text-sm sm:text-lg text-white/90 mb-8 line-clamp-2 md:line-clamp-3 max-w-xl drop-shadow-md text-shadow-premium">
               {hero.description}
             </p>
-            <div className="flex gap-3">
-              <button className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-5 sm:px-7 py-2.5 sm:py-3 rounded-md font-semibold text-sm sm:text-base transition-colors">
-                <Play size={18} fill="currentColor" /> Assistir
+            <div className="flex gap-4">
+              <button className="flex items-center gap-3 bg-white hover:bg-white/90 text-black px-6 sm:px-8 py-3 sm:py-4 rounded-md font-bold text-base sm:text-lg transition-transform hover:scale-105 active:scale-95 shadow-xl">
+                <Play size={24} fill="currentColor" /> Assistir Agora
               </button>
-              <button className="flex items-center gap-2 bg-secondary/80 hover:bg-secondary text-secondary-foreground px-5 sm:px-7 py-2.5 sm:py-3 rounded-md font-semibold text-sm sm:text-base transition-colors backdrop-blur-sm">
-                <Info size={18} /> Detalhes
+              <button className="flex items-center gap-3 bg-white/20 hover:bg-white/30 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-md font-bold text-base sm:text-lg transition-all backdrop-blur-md border border-white/20">
+                <Info size={24} /> Mais Informações
               </button>
             </div>
           </motion.div>
         </AnimatePresence>
       </div>
 
-      {/* Navigation arrows */}
-      <button
-        onClick={() => goTo(-1)}
-        className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-background/40 hover:bg-background/70 text-foreground transition-colors z-10"
-      >
-        <ChevronLeft size={24} />
-      </button>
-      <button
-        onClick={() => goTo(1)}
-        className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-background/40 hover:bg-background/70 text-foreground transition-colors z-10"
-      >
-        <ChevronRight size={24} />
-      </button>
+      {/* Shadow Overlays (Vignette) */}
+      <div className="absolute inset-0 bg-black/20 shadow-[inset_0_0_200px_rgba(0,0,0,0.8)] z-[2]" />
 
       {/* Indicators */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+      <div className="absolute bottom-10 left-12 flex gap-3 z-20">
         {heroItems.map((_, i) => (
           <button
             key={i}
             onClick={() => setCurrent(i)}
-            className={`h-1 rounded-full transition-all duration-300 ${
-              i === current ? "w-8 bg-primary" : "w-4 bg-muted-foreground/40"
+            className={`h-1.5 rounded-full transition-all duration-500 ${
+              i === current ? "w-12 bg-primary shadow-[0_0_10px_rgba(59,130,246,0.5)]" : "w-6 bg-white/30"
             }`}
           />
         ))}
