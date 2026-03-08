@@ -7,75 +7,121 @@ export const useSupabaseContent = () => {
   return useQuery({
     queryKey: ["supabase-content"],
     queryFn: async () => {
+      // 1. Fetch Supabase Data Recursively to bypass the 1000 rows limit
+      const fetchAllRecords = async (table: "cinema" | "filmes_kids" | "series" | "series_kids" | "tv_ao_vivo") => {
+        let allData: any[] = [];
+        let from = 0;
+        const limit = 1000;
+        let hasMore = true;
+
+        while (hasMore) {
+          const { data, error } = await supabase
+            .from(table)
+            .select("*")
+            .range(from, from + limit - 1);
+          
+          if (error) {
+            console.error(`Error fetching from ${table}:`, error);
+            break;
+          }
+          
+          if (data && data.length > 0) {
+            allData = [...allData, ...data];
+            from += limit;
+            hasMore = data.length === limit;
+          } else {
+            hasMore = false;
+          }
+        }
+        return allData;
+      };
+
       const [
-        { data: cinema },
-        { data: filmesKids },
-        { data: series },
-        { data: seriesKids },
-        { data: tvAoVivo }
+        cinema,
+        filmesKids,
+        series,
+        seriesKids,
+        tvAoVivo
       ] = await Promise.all([
-        supabase.from("cinema").select("*"),
-        supabase.from("filmes_kids").select("*"),
-        supabase.from("series").select("*"),
-        supabase.from("series_kids").select("*"),
-        supabase.from("tv_ao_vivo").select("*")
+        fetchAllRecords("cinema"),
+        fetchAllRecords("filmes_kids"),
+        fetchAllRecords("series"),
+        fetchAllRecords("series_kids"),
+        fetchAllRecords("tv_ao_vivo")
       ]);
 
-      const mapCinema = (item: any): ContentItem => ({
-        id: `cinema-${item.id}`,
-        tmdbId: item.tmdb_id,
-        title: item.titulo,
-        image: item.poster ? tmdbImageUrl(item.poster, "w500") : "",
-        backdrop: item.poster ? tmdbImageUrl(item.poster, "original") : "",
-        year: parseInt(item.year || "0"),
-        rating: item.rating || "N/A",
-        duration: "",
-        genre: item.category ? [item.category] : [],
-        description: item.description || "",
-        type: (item.type as any) || "movie",
-        trailer: item.trailer
-      });
+      const splitGenres = (genreStr: string | null) => {
+        if (!genreStr) return [];
+        return genreStr.split(",").map(g => g.trim()).filter(g => g.length > 0);
+      };
 
-      const mapFilmesKids = (item: any): ContentItem => ({
-        id: `kids-movie-${item.id}`,
-        title: item.titulo,
-        image: item.poster ? tmdbImageUrl(item.poster, "w500") : "",
-        backdrop: item.poster ? tmdbImageUrl(item.poster, "original") : "",
-        year: parseInt(item.year || "0"),
-        rating: item.rating || "L",
-        duration: "",
-        genre: item.genero ? [item.genero] : ["Infantil"],
-        description: item.description || "",
-        type: "movie"
-      });
+      const mapCinema = (item: any): ContentItem => {
+        const genres = splitGenres(item.category || item.genero);
+        return {
+          id: `cinema-${item.id}`,
+          tmdbId: item.tmdb_id,
+          title: item.titulo,
+          image: item.poster ? tmdbImageUrl(item.poster, "w500") : "",
+          backdrop: item.poster ? tmdbImageUrl(item.poster, "original") : "",
+          year: parseInt(item.year || "0"),
+          rating: item.rating || "N/A",
+          duration: "",
+          genre: genres.length > 0 ? genres : ["Filme"],
+          description: item.description || "",
+          type: (item.type as any) || "movie",
+          trailer: item.trailer
+        };
+      };
 
-      const mapSeries = (item: any): ContentItem => ({
-        id: `series-${item.id}`,
-        tmdbId: item.tmdb_id,
-        title: item.titulo,
-        image: item.poster ? tmdbImageUrl(item.poster, "w500") : "",
-        backdrop: item.poster ? tmdbImageUrl(item.poster, "original") : "",
-        year: parseInt(item.year || "0"),
-        rating: item.rating || "N/A",
-        duration: "",
-        genre: item.genero ? [item.genero] : ["Série"],
-        description: item.description || "",
-        type: "series",
-        trailer: item.trailer
-      });
+      const mapFilmesKids = (item: any): ContentItem => {
+        const genres = splitGenres(item.genero || item.category);
+        return {
+          id: `kids-movie-${item.id}`,
+          title: item.titulo,
+          image: item.poster ? tmdbImageUrl(item.poster, "w500") : "",
+          backdrop: item.poster ? tmdbImageUrl(item.poster, "original") : "",
+          year: parseInt(item.year || "0"),
+          rating: item.rating || "L",
+          duration: "",
+          genre: genres.length > 0 ? genres : ["Infantil"],
+          description: item.description || "",
+          type: "movie"
+        };
+      };
 
-      const mapSeriesKids = (item: any): ContentItem => ({
-        id: `kids-series-${item.id}`,
-        title: item.titulo,
-        image: item.poster ? tmdbImageUrl(item.poster, "w500") : "",
-        backdrop: item.poster ? tmdbImageUrl(item.poster, "original") : "",
-        year: parseInt(item.year || "0"),
-        rating: item.rating || "L",
-        duration: "",
-        genre: item.genero ? [item.genero] : ["Infantil"],
-        description: item.description || "",
-        type: "series"
-      });
+      const mapSeries = (item: any): ContentItem => {
+        const genres = splitGenres(item.genero || item.category);
+        return {
+          id: `series-${item.id}`,
+          tmdbId: item.tmdb_id,
+          title: item.titulo,
+          image: item.poster ? tmdbImageUrl(item.poster, "w500") : "",
+          backdrop: item.poster ? tmdbImageUrl(item.poster, "original") : "",
+          year: parseInt(item.year || "0"),
+          rating: item.rating || "N/A",
+          duration: "",
+          genre: genres.length > 0 ? genres : ["Série"],
+          description: item.description || "",
+          type: "series",
+          trailer: item.trailer
+        };
+      };
+
+      const mapSeriesKids = (item: any): ContentItem => {
+        const genres = splitGenres(item.genero || item.category);
+        return {
+          id: `kids-series-${item.id}`,
+          title: item.titulo,
+          image: item.poster ? tmdbImageUrl(item.poster, "w500") : "",
+          backdrop: item.poster ? tmdbImageUrl(item.poster, "original") : "",
+          year: parseInt(item.year || "0"),
+          rating: item.rating || "L",
+          duration: "",
+          genre: genres.length > 0 ? genres : ["Infantil"],
+          description: item.description || "",
+          type: "series"
+        };
+      };
 
       const mapTv = (item: any): ContentItem => ({
         id: `tv-${item.id}`,
@@ -214,32 +260,13 @@ export const useSupabaseContent = () => {
         categories.push(...groupItems(cinema, "cinema"));
       }
 
-      // Fetch real TMDB data for series because the table is missing it
-      const seriesWithData = series ? await Promise.all(
-        // Remove limitations, load everything
-        series.map(async (s: any) => {
-          if (!s.tmdb_id) return mapSeries(s);
-          const data = await fetchTmdbDetails(s.tmdb_id, "tv");
-          if (!data) return mapSeries(s);
-          
-          return {
-            ...mapSeries(s),
-            image: tmdbImageUrl(data.poster_path, "w500"),
-            backdrop: tmdbImageUrl(data.backdrop_path, "original"),
-            year: parseInt(data.first_air_date?.split("-")[0] || "0"),
-            rating: data.vote_average?.toFixed(1) || "N/A",
-            // Strictly get official TMDB genres
-            genre: data.genres?.map((g: any) => g.name) || ["Série"],
-            description: data.overview || ""
-          };
-        })
-      ) : [];
-
-      if (seriesWithData.length > 0) {
-        // Group series exactly by their primary TMDB genre (Zero repeats)
+      // Fast map series directly from DB without calling TMDB endpoints
+      // This prevents rate limits ("Rate Limit Exceeded") from 5k+ API requests
+      if (series && series.length > 0) {
+        const seriesItems = series.map(mapSeries);
         const groupedSeries: Record<string, ContentItem[]> = {};
 
-        seriesWithData.forEach(s => {
+        seriesItems.forEach(s => {
           // Get the primary official TMDB genre, or fallback to 'Série'
           const primaryGenre = s.genre && s.genre.length > 0 ? s.genre[0] : "Série";
           
