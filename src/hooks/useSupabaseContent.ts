@@ -91,18 +91,26 @@ export const useSupabaseContent = () => {
       });
 
       const CINEMA_MASTER_CATEGORIES = [
-        "Lançamento 2026", "Lançamento 2025", "Ação", "Aventura", "Anime", "Animação", 
-        "Comédia", "Drama", "Dorama", "Clássicos", "Negritude", "Crime", "Policial", 
-        "Família", "Musical", "Documentário", "Faroeste", "Ficção", "Nacional", 
-        "Religioso", "Romance", "Terror", "Suspense", "Adulto"
+        "Filmes recomendados para você", 
+        "Adicionados recentemente", 
+        "Ação imperdível", 
+        "Comédias para rir alto", 
+        "Drama e emoção", 
+        "Suspense e Terror",
+        "Romance de tirar o fôlego",
+        "Documentários e Histórias Reais",
+        "Aventura em família",
+        "Filmes Nacionais"
       ];
 
       const SERIES_MASTER_CATEGORIES = [
-        "Lançamento 2026", "Lançamento 2025", 
-        "Ação e Aventura", "Animação", "Comédia", "Crime", 
-        "Documentário", "Drama", "Família", "Kids", 
-        "Mistério", "News", "Reality", "Ficção Científica e Fantasia", 
-        "Soap", "Talk", "Guerra e Política", "Faroeste"
+        "Séries que achamos que você vai curtir",
+        "Séries dramáticas de sucesso",
+        "Sci-Fi e Fantasia aclamadas",
+        "Investigação e Mistério",
+        "Comédias de TV populares",
+        "Animações que você precisa ver",
+        "Reality Shows em alta"
       ];
 
       const categories: Category[] = [];
@@ -123,42 +131,70 @@ export const useSupabaseContent = () => {
           
           let allocated = false;
 
-          // 1. Check for launches first (priority)
-          if (itemYear === "2026" && grouped["Lançamento 2026"]) {
-            grouped["Lançamento 2026"].push(type === "cinema" ? mapCinema(item) : mapSeries(item));
-            allocated = true;
-          } else if (itemYear === "2025" && grouped["Lançamento 2025"]) {
-            grouped["Lançamento 2025"].push(type === "cinema" ? mapCinema(item) : mapSeries(item));
-            allocated = true;
+          // 1. Check for launches first (Priority)
+          if (itemYear === "2026" || itemYear === "2025") {
+             if (type === "cinema" && grouped["Adicionados recentemente"]) {
+                grouped["Adicionados recentemente"].push(mapCinema(item));
+                allocated = true;
+             }
           }
 
-          // 2. Main categorization logic
+          // 2. Main Categorization Logic mapping to Prime Video specific strings
           if (!allocated) {
             if (type === "cinema") {
-              // Exclusive first-match for Cinema
-              for (const catName of masterList) {
-                if (itemCats.includes(catName)) {
-                  grouped[catName].push(mapCinema(item));
-                  allocated = true;
-                  break;
-                }
-              }
+               for (const c of itemCats) {
+                 const catLower = c.toLowerCase();
+                 if ((catLower.includes("ação") || catLower.includes("policial")) && grouped["Ação imperdível"]) {
+                    grouped["Ação imperdível"].push(mapCinema(item)); allocated = true; break;
+                 }
+                 if (catLower.includes("comédia") && grouped["Comédias para rir alto"]) {
+                    grouped["Comédias para rir alto"].push(mapCinema(item)); allocated = true; break;
+                 }
+                 if ((catLower.includes("terror") || catLower.includes("suspense")) && grouped["Suspense e Terror"]) {
+                    grouped["Suspense e Terror"].push(mapCinema(item)); allocated = true; break;
+                 }
+                 if ((catLower.includes("drama") || catLower.includes("dorama")) && grouped["Drama e emoção"]) {
+                    grouped["Drama e emoção"].push(mapCinema(item)); allocated = true; break;
+                 }
+                 if (catLower.includes("romance") && grouped["Romance de tirar o fôlego"]) {
+                    grouped["Romance de tirar o fôlego"].push(mapCinema(item)); allocated = true; break;
+                 }
+                 if (catLower.includes("documentário") && grouped["Documentários e Histórias Reais"]) {
+                    grouped["Documentários e Histórias Reais"].push(mapCinema(item)); allocated = true; break;
+                 }
+                 if (catLower.includes("família") || catLower.includes("aventura")) {
+                    grouped["Aventura em família"].push(mapCinema(item)); allocated = true; break;
+                 }
+               }
             } else {
-              // Multi-match for Series (TMDB style)
-              masterList.forEach(catName => {
-                if (itemCats.some((c: string) => c.toLowerCase() === catName.toLowerCase() || 
-                    (catName === "Ação e Aventura" && (c === "Ação" || c === "Aventura")) ||
-                    (catName === "Ficção Científica e Fantasia" && (c === "Ficção" || c === "Fantasia" || c === "Sci-Fi")))) {
-                  grouped[catName].push(mapSeries(item));
-                  allocated = true;
-                }
-              });
+               // FOR SERIES (exclusive)
+               for (const c of itemCats) {
+                 const catLower = c.toLowerCase();
+                 if ((catLower.includes("drama") || catLower.includes("soap")) && grouped["Séries dramáticas de sucesso"]) {
+                    grouped["Séries dramáticas de sucesso"].push(mapSeries(item)); allocated = true; break;
+                 }
+                 if ((catLower.includes("sci-fi") || catLower.includes("fantasia") || catLower.includes("ficção")) && grouped["Sci-Fi e Fantasia aclamadas"]) {
+                    grouped["Sci-Fi e Fantasia aclamadas"].push(mapSeries(item)); allocated = true; break;
+                 }
+                 if ((catLower.includes("crime") || catLower.includes("mistério") || catLower.includes("policial")) && grouped["Investigação e Mistério"]) {
+                    grouped["Investigação e Mistério"].push(mapSeries(item)); allocated = true; break;
+                 }
+                 if (catLower.includes("comédia") && grouped["Comédias de TV populares"]) {
+                    grouped["Comédias de TV populares"].push(mapSeries(item)); allocated = true; break;
+                 }
+                 if (catLower.includes("animação") && grouped["Animações que você precisa ver"]) {
+                    grouped["Animações que você precisa ver"].push(mapSeries(item)); allocated = true; break;
+                 }
+                 if (catLower.includes("reality") && grouped["Reality Shows em alta"]) {
+                    grouped["Reality Shows em alta"].push(mapSeries(item)); allocated = true; break;
+                 }
+               }
             }
           }
 
-          // 3. Fallback for items that don't match any master category
+          // 3. Fallback for items that didn't match
           if (!allocated) {
-             const fallbackCat = type === "cinema" ? "Aventura" : "Drama";
+             const fallbackCat = type === "cinema" ? "Filmes recomendados para você" : "Séries que achamos que você vai curtir";
              if (grouped[fallbackCat]) {
                grouped[fallbackCat].push(type === "cinema" ? mapCinema(item) : mapSeries(item));
              }
@@ -205,21 +241,53 @@ export const useSupabaseContent = () => {
           items: seriesWithData
         });
 
-        // Group by TMDB Genres
+        // 4. Agrupar as séries com a nova lógica Prime Video exclusiva
+        // Precisamos converter `seriesWithData` de volta ao formato que `groupItems` espera ou chamá-lo
+        // Como groupItems foi projetado para ler category/genero da tabela raw, ele não funciona perfeitamente
+        // com o ContentItem mapeado. Vamos fazer o agrupamento localmente.
         const groupedSeries: Record<string, ContentItem[]> = {};
-        seriesWithData.forEach(s => {
-          s.genre.forEach(g => {
-            if (!groupedSeries[g]) groupedSeries[g] = [];
-            groupedSeries[g].push(s);
-          });
+        SERIES_MASTER_CATEGORIES.forEach(catName => {
+          groupedSeries[catName] = [];
         });
 
-        Object.entries(groupedSeries).forEach(([genre, items]) => {
-          categories.push({
-            id: `series-${genre.toLowerCase().replace(/\s+/g, "-")}`,
-            title: genre,
-            items
-          });
+        seriesWithData.forEach(s => {
+          let allocated = false;
+          
+          for (const g of s.genre) {
+             const catLower = g.toLowerCase();
+             if ((catLower.includes("drama") || catLower.includes("soap")) && groupedSeries["Séries dramáticas de sucesso"]) {
+                groupedSeries["Séries dramáticas de sucesso"].push(s); allocated = true; break;
+             }
+             if ((catLower.includes("sci-fi") || catLower.includes("fantasia") || catLower.includes("ficção")) && groupedSeries["Sci-Fi e Fantasia aclamadas"]) {
+                groupedSeries["Sci-Fi e Fantasia aclamadas"].push(s); allocated = true; break;
+             }
+             if ((catLower.includes("crime") || catLower.includes("mistério") || catLower.includes("policial")) && groupedSeries["Investigação e Mistério"]) {
+                groupedSeries["Investigação e Mistério"].push(s); allocated = true; break;
+             }
+             if (catLower.includes("comédia") && groupedSeries["Comédias de TV populares"]) {
+                groupedSeries["Comédias de TV populares"].push(s); allocated = true; break;
+             }
+             if (catLower.includes("animação") && groupedSeries["Animações que você precisa ver"]) {
+                groupedSeries["Animações que você precisa ver"].push(s); allocated = true; break;
+             }
+             if (catLower.includes("reality") && groupedSeries["Reality Shows em alta"]) {
+                groupedSeries["Reality Shows em alta"].push(s); allocated = true; break;
+             }
+          }
+
+          if (!allocated) {
+             groupedSeries["Séries que achamos que você vai curtir"].push(s);
+          }
+        });
+
+        SERIES_MASTER_CATEGORIES.forEach(title => {
+          if (groupedSeries[title].length > 0) {
+            categories.push({
+              id: `series-${title.toLowerCase().replace(/\s+/g, "-")}`,
+              title,
+              items: groupedSeries[title]
+            });
+          }
         });
       }
 

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Play, Pause, RotateCcw, Volume2, VolumeX, Maximize2, Settings, Subtitles, AudioLines, X, Info } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -70,7 +71,7 @@ const NetflixPlayer = ({ url, title, onClose }: NetflixPlayerProps) => {
     e.stopPropagation();
   };
 
-  return (
+  const playerContent = (
     <div 
       className="fixed inset-0 z-[999999] bg-black flex items-center justify-center overflow-hidden pointer-events-auto"
       onMouseMove={(e) => {
@@ -188,6 +189,8 @@ const NetflixPlayer = ({ url, title, onClose }: NetflixPlayerProps) => {
       </AnimatePresence>
     </div>
   );
+
+  return createPortal(playerContent, document.body);
 };
 
 export default NetflixPlayer;

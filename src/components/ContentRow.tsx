@@ -12,38 +12,16 @@ const ContentRow = ({ category }: ContentRowProps) => {
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
-  // Triplicar itens para efeito de scroll infinito real
-  const infiniteItems = [...category.items, ...category.items, ...category.items];
-
   const checkScroll = () => {
     const el = scrollRef.current;
     if (!el) return;
-
-    const scrollLeft = el.scrollLeft;
-    const scrollWidth = el.scrollWidth;
-    const clientWidth = el.clientWidth;
-    const singleSetWidth = scrollWidth / 3;
-
-    // Se o usuário chegar perto do início do primeiro set, pula pro início do segundo
-    if (scrollLeft < 100) {
-      el.scrollLeft = singleSetWidth + scrollLeft;
-    }
-    // Se o usuário chegar no final do terceiro set, pula pro início do segundo
-    else if (scrollLeft > scrollWidth - clientWidth - 100) {
-      el.scrollLeft = scrollLeft - singleSetWidth;
-    }
-
     setCanScrollLeft(el.scrollLeft > 10);
     setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 10);
   };
 
   useEffect(() => {
-    // Iniciar no meio (segundo set de itens)
-    const el = scrollRef.current;
-    if (el) {
-       el.scrollLeft = el.scrollWidth / 3;
-    }
-  }, []);
+    checkScroll();
+  }, [category.items]);
 
   const scroll = (dir: number) => {
     const el = scrollRef.current;
@@ -61,12 +39,14 @@ const ContentRow = ({ category }: ContentRowProps) => {
 
       <div className="relative isolate">
         {/* Left arrow */}
-        <button
-          onClick={() => scroll(-1)}
-          className="absolute left-0 top-0 bottom-0 w-12 md:w-16 z-[70] flex items-center justify-center bg-black/60 hover:bg-black/80 opacity-0 group-hover/row:opacity-100 transition-opacity"
-        >
-          <ChevronLeft size={40} className="text-white" />
-        </button>
+        {canScrollLeft && (
+          <button
+            onClick={() => scroll(-1)}
+            className="absolute left-0 top-0 bottom-0 w-12 md:w-16 z-[70] flex items-center justify-center bg-black/60 hover:bg-black/80 opacity-0 group-hover/row:opacity-100 transition-opacity"
+          >
+            <ChevronLeft size={40} className="text-white" />
+          </button>
+        )}
 
         {/* Scrollable row */}
         <div
@@ -78,23 +58,25 @@ const ContentRow = ({ category }: ContentRowProps) => {
             paddingInline: "6vw",
           }}
         >
-          {infiniteItems.map((item, idx) => (
+          {category.items.map((item, idx) => (
             <ContentCard 
               key={`${item.id}-${idx}`} 
               item={item} 
               index={idx} 
-              isLast={idx === infiniteItems.length - 1} 
+              isLast={idx === category.items.length - 1} 
             />
           ))}
         </div>
 
         {/* Right arrow */}
-        <button
-          onClick={() => scroll(1)}
-          className="absolute right-0 top-0 bottom-0 w-12 md:w-16 z-[70] flex items-center justify-center bg-black/60 hover:bg-black/80 opacity-0 group-hover/row:opacity-100 transition-opacity"
-        >
-          <ChevronRight size={40} className="text-white" />
-        </button>
+        {canScrollRight && (
+          <button
+            onClick={() => scroll(1)}
+            className="absolute right-0 top-0 bottom-0 w-12 md:w-16 z-[70] flex items-center justify-center bg-black/60 hover:bg-black/80 opacity-0 group-hover/row:opacity-100 transition-opacity"
+          >
+            <ChevronRight size={40} className="text-white" />
+          </button>
+        )}
       </div>
     </section>
   );
