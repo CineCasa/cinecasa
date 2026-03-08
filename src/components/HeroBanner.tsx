@@ -133,19 +133,19 @@ const HeroBanner = ({ filterCategory }: HeroBannerProps) => {
               <span>• {hero.year}</span>
               <span className="text-[#ffff5c]">{hero.rating}</span>
             </p>
-            <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white mb-4 leading-tight drop-shadow-2xl text-shadow-premium">
+            <h2 className="text-[clamp(2.5rem,5vw,4.5rem)] font-[900] text-white mb-4 leading-tight drop-shadow-2xl text-shadow-premium">
               {hero.title}
             </h2>
-            <p className="text-sm sm:text-lg text-white/90 mb-8 line-clamp-2 md:line-clamp-3 max-w-xl drop-shadow-md text-shadow-premium">
+            <p className="text-[clamp(1rem,1.3vw,1.25rem)] text-white/90 mb-8 line-clamp-2 md:line-clamp-3 max-w-xl drop-shadow-md text-shadow-premium leading-[1.4]">
               {hero.description}
             </p>
             <div className="flex gap-4">
-              <button className="flex items-center gap-3 bg-white hover:bg-white/90 text-black px-6 sm:px-8 py-3 sm:py-4 rounded-md font-bold text-base sm:text-lg transition-transform hover:scale-105 active:scale-95 shadow-xl">
+              <button className="flex items-center gap-3 btn-glow-primary font-bold text-[clamp(0.9rem,1.2vw,1.1rem)] px-6 sm:px-8 py-3 sm:py-4 transition-transform z-10">
                 <Play size={24} fill="currentColor" /> Assistir Agora
               </button>
               <button 
                 onClick={() => navigate(`/details/${hero.id.includes("series") ? "series" : "cinema"}/${hero.tmdbId || hero.id}`)}
-                className="flex items-center gap-3 bg-white/20 hover:bg-white/30 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-md font-bold text-base sm:text-lg transition-all backdrop-blur-md border border-white/20 hover:scale-105 focus-visible"
+                className="flex items-center gap-3 btn-glow-secondary font-bold text-[clamp(0.9rem,1.2vw,1.1rem)] px-6 sm:px-8 py-3 sm:py-4 transition-transform z-10"
               >
                 <Info size={24} /> Mais Informações
               </button>

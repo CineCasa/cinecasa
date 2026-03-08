@@ -1,15 +1,16 @@
 import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Play, Pause, RotateCcw, Volume2, VolumeX, Maximize2, Settings, Subtitles, AudioLines, X, Info } from "lucide-react";
+import { Play, Pause, RotateCcw, Volume2, VolumeX, Maximize2, Settings, Subtitles, AudioLines, X, Info, ChevronLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface NetflixPlayerProps {
   url: string;
   title: string;
+  historyItem?: any;
   onClose: () => void;
 }
 
-const NetflixPlayer = ({ url, title, onClose }: NetflixPlayerProps) => {
+const NetflixPlayer = ({ url, title, historyItem, onClose }: NetflixPlayerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
@@ -19,6 +20,20 @@ const NetflixPlayer = ({ url, title, onClose }: NetflixPlayerProps) => {
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const controlsTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (historyItem) {
+      try {
+        const historyStr = localStorage.getItem("paixaohist");
+        let history = historyStr ? JSON.parse(historyStr) : [];
+        history = history.filter((h: any) => h.id !== historyItem.id);
+        history.unshift({ ...historyItem, timestamp: Date.now() });
+        localStorage.setItem("paixaohist", JSON.stringify(history.slice(0, 50)));
+      } catch (e) {
+        console.error("Failed to save history:", e);
+      }
+    }
+  }, [historyItem]);
 
   const togglePlay = () => {
     if (videoRef.current) {
@@ -100,93 +115,90 @@ const NetflixPlayer = ({ url, title, onClose }: NetflixPlayerProps) => {
         />
       )}
 
-      <AnimatePresence>
-        {showControls && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 flex flex-col justify-between pointer-events-auto"
-            onClick={handleContainerInteraction}
-          >
-            {/* Top Bar */}
-            <div className="p-8 flex items-center justify-between">
-              <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors text-white">
-                <RotateCcw size={32} />
-              </button>
-              <div className="text-center">
-                <h2 className="text-xl md:text-2xl font-bold text-white uppercase tracking-[0.2em]">{title}</h2>
-              </div>
-              <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors text-white">
-                <X size={32} />
-              </button>
+      {/* Custom Styles as requested from the snippet */}
+      <style dangerouslySetInnerHTML={{__html: `
+        .overlay-controls {
+          position: absolute; inset: auto 0 0 0; 
+          background: linear-gradient(transparent, #000000dd);
+          padding: clamp(16px, 4vh, 32px) clamp(24px, 4vw, 48px);
+          display: flex; align-items: center; justify-content: space-between;
+          opacity: 0; transform: translateY(100%);
+          transition: opacity 0.3s ease, transform 0.3s ease;
+          pointer-events: none;
+        }
+        .overlay-controls.show {
+          opacity: 1; transform: none; pointer-events: auto;
+        }
+        .oc-btn {
+          background: #ffffff26; border: none; color: #fff;
+          font-size: clamp(20px, 4vw, 32px);
+          width: clamp(48px, 6vw, 64px); height: clamp(48px, 6vw, 64px);
+          border-radius: 50%; cursor: pointer;
+          -webkit-tap-highlight-color: transparent;
+          display: inline-flex; align-items: center; justify-content: center;
+          transition: transform 0.2s, background 0.2s;
+        }
+        .oc-btn:active, .oc-btn:hover { transform: scale(1.1); background: #ffffff4a; }
+        .progress-bar-container {
+          flex: 1; display: flex; flex-direction: column; gap: 8px; margin: 0 clamp(20px, 4vw, 40px);
+        }
+        .progress-bar {
+          height: 6px; background: #ffffff4a; border-radius: 3px; position: relative; cursor: pointer;
+        }
+        .progress-bar div {
+          height: 100%; background: var(--glow, #ffc107); border-radius: inherit; transition: width 0.1s linear;
+        }
+        .time-label {
+          font-size: clamp(12px, 1.5vw, 16px); opacity: 0.9; color: white; text-align: right;
+        }
+        .top-bar {
+          position: absolute; top: 0; left: 0; right: 0;
+          padding: 24px 32px; display: flex; justify-content: space-between; align-items: center;
+          background: linear-gradient(#000000dd, transparent);
+          opacity: 0; transform: translateY(-100%);
+          transition: opacity 0.3s ease, transform 0.3s ease;
+          pointer-events: none;
+        }
+        .top-bar.show {
+           opacity: 1; transform: none; pointer-events: auto;
+        }
+      `}} />
+
+      <div className={`top-bar ${showControls ? 'show' : ''}`} onClick={handleContainerInteraction}>
+        <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors text-white">
+          <ChevronLeft size={36} />
+        </button>
+        <h2 className="text-xl md:text-2xl font-bold text-white uppercase tracking-[0.2em]">{title}</h2>
+        <button className="p-2 opacity-0 cursor-default">
+           <X size={36} />
+        </button>
+      </div>
+
+      <div className={`overlay-controls ${showControls ? 'show' : ''}`} onClick={handleContainerInteraction}>
+        <button className="oc-btn" onClick={togglePlay}>
+          {isPlaying ? <Pause size={32} /> : <Play size={32} />}
+        </button>
+
+        <div className="progress-bar-container">
+          <div className="progress-bar" onClick={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const pct = (e.clientX - rect.left) / rect.width;
+            if (videoRef.current) {
+              videoRef.current.currentTime = pct * duration;
+              setProgress(pct * 100);
+            }
+          }}>
+            <div style={{ width: `${progress}%` }} />
+          </div>
+          <div className="flex justify-between items-center text-white/70">
+            <span className="time-label">{formatTime(currentTime)} / {formatTime(duration)}</span>
+            <div className="flex gap-4">
+               <Volume2 size={24} className="cursor-pointer hover:text-white" onClick={() => setIsMuted(!isMuted)} />
+               <Maximize2 size={24} className="cursor-pointer hover:text-white" />
             </div>
-
-            {/* Bottom Controls */}
-            <div className="p-8 pb-12 flex flex-col gap-6">
-              {/* Progress Bar */}
-              <div className="flex flex-col gap-2">
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={progress}
-                  onChange={seek}
-                  className="w-full h-1 bg-white/20 appearance-none cursor-pointer accent-primary hover:h-2 transition-all"
-                />
-                <div className="flex justify-end text-sm text-white font-medium">
-                  {formatTime(currentTime)} / {formatTime(duration)}
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-8">
-                  <button onClick={togglePlay} className="text-white hover:scale-110 transition-transform">
-                    {isPlaying ? <Pause size={48} fill="white" /> : <Play size={48} fill="white" />}
-                  </button>
-                  <button className="text-white hover:scale-110 transition-transform hidden md:block">
-                    <RotateCcw size={32} className="transform -scale-x-100" />
-                  </button>
-                  <button className="text-white hover:scale-110 transition-transform hidden md:block">
-                    <RotateCcw size={32} />
-                  </button>
-                  <div className="flex items-center gap-4 group">
-                    <button onClick={() => setIsMuted(!isMuted)} className="text-white hover:scale-110 transition-transform">
-                      {isMuted ? <VolumeX size={32} /> : <Volume2 size={32} />}
-                    </button>
-                    <input 
-                      type="range" 
-                      min="0" 
-                      max="1" 
-                      step="0.1" 
-                      value={isMuted ? 0 : volume}
-                      onChange={(e) => setVolume(parseFloat(e.target.value))}
-                      className="w-0 group-hover:w-24 transition-all overflow-hidden accent-primary" 
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-8">
-                   <div className="flex items-center gap-2 group cursor-pointer hover:bg-white/10 px-3 py-2 rounded transition-colors">
-                      <AudioLines size={24} className="text-white" />
-                      <span className="text-white text-sm font-bold uppercase hidden md:inline">Áudio e Legendas</span>
-                   </div>
-                   <button className="text-white hover:scale-110 transition-transform">
-                    <Info size={32} />
-                  </button>
-                  <button className="text-white hover:scale-110 transition-transform">
-                    <Settings size={32} />
-                  </button>
-                  <button className="text-white hover:scale-110 transition-transform">
-                    <Maximize2 size={32} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+        </div>
+      </div>
     </div>
   );
 

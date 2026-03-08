@@ -243,6 +243,19 @@ const Details = () => {
         <NetflixPlayer 
           url={trailerUrl || ""} 
           title={data.title || data.name} 
+          historyItem={{
+            id: id,
+            tmdbId: id,
+            title: data.title || data.name,
+            image: tmdbImageUrl(data.poster_path, "w500"),
+            backdrop: tmdbImageUrl(data.backdrop_path, "original"),
+            year: parseInt(releaseYear || "2000"),
+            rating: data.vote_average?.toString() || "0",
+            duration: duration,
+            genre: data.genres?.map((g: any) => g.name) || [],
+            description: data.overview,
+            type: type
+          }}
           onClose={() => setIsPlayerOpen(false)} 
         />
       )}

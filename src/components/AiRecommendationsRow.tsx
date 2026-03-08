@@ -1,13 +1,13 @@
 import { useRef, useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Category } from "@/data/content";
 import ContentCard from "./ContentCard";
+import { ContentItem } from "@/data/content";
 
-interface ContentRowProps {
-  category: Category;
+interface AiRecommendationsRowProps {
+  items: (ContentItem & { matchScore?: number })[];
 }
 
-const ContentRow = ({ category }: ContentRowProps) => {
+const AiRecommendationsRow = ({ items }: AiRecommendationsRowProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
@@ -21,7 +21,7 @@ const ContentRow = ({ category }: ContentRowProps) => {
 
   useEffect(() => {
     checkScroll();
-  }, [category.items]);
+  }, [items]);
 
   const scroll = (dir: number) => {
     const el = scrollRef.current;
@@ -31,14 +31,16 @@ const ContentRow = ({ category }: ContentRowProps) => {
     setTimeout(checkScroll, 400);
   };
 
+  if (!items || items.length === 0) return null;
+
   return (
-    <section className="relative group/row mb-2 md:mb-4 z-10 hover:z-[60] transition-all duration-300">
-      <h2 className="text-[clamp(1.2rem,1.8vw,1.6rem)] font-bold text-white px-4 md:px-8 lg:px-12 mb-6 tracking-tight drop-shadow-lg text-shadow-premium">
-        {category.title}
+    <section className="relative group/row mb-2 md:mb-8 z-10 hover:z-[60] transition-all duration-300">
+      <h2 className="text-[clamp(1.4rem,2vw,1.8rem)] font-black px-4 md:px-8 lg:px-12 mb-6 tracking-tight drop-shadow-lg flex items-center gap-3">
+        <span className="text-[var(--glow)]">💡 IA Local</span> 
+        <span className="text-white/90">Baseado no que você curtiu</span>
       </h2>
 
       <div className="relative isolate">
-        {/* Left arrow */}
         {canScrollLeft && (
           <button
             onClick={() => scroll(-1)}
@@ -48,7 +50,6 @@ const ContentRow = ({ category }: ContentRowProps) => {
           </button>
         )}
 
-        {/* Scrollable row */}
         <div
           ref={scrollRef}
           onScroll={checkScroll}
@@ -58,17 +59,20 @@ const ContentRow = ({ category }: ContentRowProps) => {
             paddingInline: "6vw",
           }}
         >
-          {category.items.map((item, idx) => (
-            <ContentCard 
-              key={`${item.id}-${idx}`} 
-              item={item} 
-              index={idx} 
-              isLast={idx === category.items.length - 1} 
-            />
+          {items.map((item, idx) => (
+            <div key={`${item.id}-${idx}`} className="relative flex-shrink-0 group">
+                <ContentCard 
+                  item={item} 
+                  index={idx} 
+                  isLast={idx === items.length - 1} 
+                />
+                <span className="absolute bottom-2 left-2 z-20 text-[11px] font-black text-black bg-[var(--glow)] px-2 py-0.5 rounded-[4px] shadow-[0_2px_10px_rgba(255,193,7,0.5)] pointer-events-none">
+                  {item.matchScore}% match
+                </span>
+            </div>
           ))}
         </div>
 
-        {/* Right arrow */}
         {canScrollRight && (
           <button
             onClick={() => scroll(1)}
@@ -82,4 +86,4 @@ const ContentRow = ({ category }: ContentRowProps) => {
   );
 };
 
-export default ContentRow;
+export default AiRecommendationsRow;
