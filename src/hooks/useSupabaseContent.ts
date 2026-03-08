@@ -136,7 +136,7 @@ export const useSupabaseContent = () => {
         trailer: item.url
       });
 
-      const CINEMA_MASTER_CATEGORIES = [
+      const MASTER_CATEGORIES = [
         "Lançamento 2026", "Lançamento 2025", "Ação", "Aventura", "Anime", "Animação", 
         "Comédia", "Drama", "Dorama", "Clássicos", "Negritude", "Crime", "Policial", 
         "Família", "Musical", "Documentário", "Faroeste", "Ficção", "Nacional", 
@@ -145,57 +145,74 @@ export const useSupabaseContent = () => {
 
       const categories: Category[] = [];
 
-      // Helper to group items by multiple categories
-      const groupItemsCinema = (items: any[]) => {
+      const allocateItemsToMasterCategories = (items: ContentItem[], prefix: string, fallback: string) => {
         const grouped: Record<string, ContentItem[]> = {};
-        
-        CINEMA_MASTER_CATEGORIES.forEach(catName => {
-          grouped[catName] = [];
+        MASTER_CATEGORIES.forEach(cat => {
+          grouped[cat] = [];
         });
 
         items.forEach(item => {
           const itemYear = item.year?.toString() || "0";
-          const rawCats = (item.category || item.genero || "");
-          const itemCats = rawCats.split(",").map((s: string) => s.trim());
-          
+          const itemCats = item.genre.map(g => g.toLowerCase());
           let allocated = false;
 
-          // 1. Check for launches first (Priority)
+          // 1. Check for launches first
           if (itemYear === "2026" && grouped["Lançamento 2026"]) {
-             grouped["Lançamento 2026"].push(mapCinema(item)); allocated = true;
+             grouped["Lançamento 2026"].push(item); allocated = true;
           } else if (itemYear === "2025" && grouped["Lançamento 2025"]) {
-             grouped["Lançamento 2025"].push(mapCinema(item)); allocated = true;
+             grouped["Lançamento 2025"].push(item); allocated = true;
           }
 
+          // 2. Map to master categories
           if (!allocated) {
-             for (const catName of CINEMA_MASTER_CATEGORIES) {
-                if (itemCats.includes(catName)) {
-                   grouped[catName].push(mapCinema(item));
+             for (const catName of MASTER_CATEGORIES) {
+                if (catName.startsWith("Lançamento")) continue;
+                
+                const catNameLower = catName.toLowerCase();
+                // Special mapping logic for complex TMDB Portuguese/English genres to ensure they hit your strict categories
+                const hasMatch = itemCats.some(g => {
+                  if (g === catNameLower || g.includes(catNameLower)) return true;
+                  if (catNameLower === "ação" && g.includes("action")) return true;
+                  if (catNameLower === "aventura" && g.includes("adventure")) return true;
+                  if (catNameLower === "ficção" && (g.includes("sci") || g.includes("fantasy") || g.includes("fantasia"))) return true;
+                  if (catNameLower === "policial" && (g.includes("police") || g.includes("investiga") || g.includes("mistério") || g.includes("mystery"))) return true;
+                  if (catNameLower === "terror" && g.includes("horror")) return true;
+                  if (catNameLower === "comédia" && g.includes("comedy")) return true;
+                  if (catNameLower === "família" && g.includes("family")) return true;
+                  if (catNameLower === "documentário" && g.includes("documentary")) return true;
+                  if (catNameLower === "faroeste" && g.includes("western")) return true;
+                  if (catNameLower === "romance" && g.includes("romântico")) return true;
+                  if (catNameLower === "adulto" && g.includes("aduto")) return true;
+                  return false;
+                });
+                
+                if (hasMatch && grouped[catName]) {
+                   grouped[catName].push(item);
                    allocated = true;
                    break;
                 }
              }
           }
 
-          // 3. Fallback for items that didn't match
-          if (!allocated) {
-             if (grouped["Ação"]) {
-               grouped["Ação"].push(mapCinema(item));
-             }
+          // 3. Fallback
+          if (!allocated && grouped[fallback]) {
+             grouped[fallback].push(item);
+          } else if (!allocated && grouped["Ação"]) {
+             grouped["Ação"].push(item);
           }
         });
 
-        return CINEMA_MASTER_CATEGORIES
+        return MASTER_CATEGORIES
           .map(title => ({
-            id: `cinema-${title.toLowerCase().replace(/\s+/g, "-")}`,
+            id: `${prefix}-${title.toLowerCase().replace(/\s+/g, "-")}`,
             title,
-            items: grouped[title]
+            items: grouped[title].sort((a, b) => a.title.localeCompare(b.title))
           }))
           .filter(cat => cat.items.length > 0);
       };
 
-      if (cinema) {
-        categories.push(...groupItemsCinema(cinema));
+      if (cinema && cinema.length > 0) {
+        categories.push(...allocateItemsToMasterCategories(cinema.map(mapCinema), "cinema", "Ação"));
       }
 
       // Fetch TMDB data for SERIES safely in batches. Covers are wrong/blank without this!
@@ -210,13 +227,15 @@ export const useSupabaseContent = () => {
               const data = await fetchTmdbDetails(s.tmdb_id, "tv");
               if (!data) return mapSeries(s);
               
+              const genres = data.genres?.map((g: any) => g.name) || splitGenres(s.genero || s.category);
+              
               return {
                 ...mapSeries(s),
                 image: data.poster_path ? tmdbImageUrl(data.poster_path, "w500") : tmdbImageUrl(s.poster, "w500"),
                 backdrop: data.backdrop_path ? tmdbImageUrl(data.backdrop_path, "original") : tmdbImageUrl(s.poster, "original"),
                 year: parseInt(data.first_air_date?.split("-")[0] || "0"),
                 rating: data.vote_average?.toFixed(1) || "N/A",
-                genre: data.genres?.map((g: any) => g.name) || []
+                genre: genres
               };
             })
           );
@@ -229,31 +248,7 @@ export const useSupabaseContent = () => {
       }
 
       if (seriesWithData.length > 0) {
-        const groupedSeries: Record<string, ContentItem[]> = {};
-
-        seriesWithData.forEach(s => {
-          // Exclude "Sci", "Science Fiction", "Séries"
-          const validGenres = s.genre.filter((g: string) => {
-            const lower = g.toLowerCase();
-            return !lower.includes("sci") && !lower.includes("série") && !lower.includes("series");
-          });
-          
-          let primaryGenre = validGenres.length > 0 ? validGenres[0] : "Drama"; // Safe default TMDB genre
-
-          if (!groupedSeries[primaryGenre]) {
-            groupedSeries[primaryGenre] = [];
-          }
-          groupedSeries[primaryGenre].push(s);
-        });
-
-        Object.keys(groupedSeries).sort().forEach(genre => {
-          const sortedItems = groupedSeries[genre].sort((a, b) => a.title.localeCompare(b.title));
-          categories.push({
-            id: `series-${genre.toLowerCase().replace(/\s+/g, "-")}`,
-            title: genre,
-            items: sortedItems
-          });
-        });
+         categories.push(...allocateItemsToMasterCategories(seriesWithData, "series", "Drama"));
       }
 
       if (filmesKids && filmesKids.length > 0) {
