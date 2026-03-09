@@ -53,16 +53,17 @@ const ContentRow = ({ category, showProgress = false }: ContentRowProps) => {
         <div
           ref={scrollRef}
           onScroll={checkScroll}
-          className="row-scroll-container"
+          className="row-scroll-container snap-x snap-proximity"
         >
           {category.items.map((item, idx) => (
-            <ContentCard 
-              key={`${item.id}-${idx}`} 
-              item={item} 
-              index={idx} 
-              isLast={idx === category.items.length - 1} 
-              showProgress={showProgress}
-            />
+            <div key={`${item.id}-${idx}`} className="snap-center">
+              <ContentCard 
+                item={item} 
+                index={idx} 
+                isLast={idx === category.items.length - 1} 
+                showProgress={showProgress}
+              />
+            </div>
           ))}
         </div>
 

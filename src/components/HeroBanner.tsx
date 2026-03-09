@@ -151,10 +151,10 @@ const HeroBanner = ({ filterCategory }: HeroBannerProps) => {
               <span>• {hero.year}</span>
               <span className="text-[#ffff5c]">{hero.rating}</span>
             </p>
-            <h2 className="text-[clamp(2.5rem,5vw,4.5rem)] font-[900] text-white mb-4 leading-tight drop-shadow-2xl text-shadow-premium">
+            <h2 className="text-[clamp(1.8rem,8vw,5.5rem)] font-[900] text-white mb-4 leading-[1.1] drop-shadow-2xl text-shadow-premium">
               {hero.title}
             </h2>
-            <p className="text-[clamp(1rem,1.3vw,1.25rem)] text-white/90 mb-8 line-clamp-2 md:line-clamp-3 max-w-xl drop-shadow-md text-shadow-premium leading-[1.4]">
+            <p className="text-[clamp(0.9rem,1.5vw,1.4rem)] text-white/90 mb-8 line-clamp-2 md:line-clamp-3 max-w-2xl drop-shadow-md text-shadow-premium leading-[1.4]">
               {hero.description}
             </p>
             <div className="flex gap-4">
