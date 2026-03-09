@@ -64,7 +64,18 @@
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     overflow-x: hidden;
     overscroll-behavior: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
+}
+
+/* GPU Acceleration for smooth animations on TVs */
+.gpu-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+  will-change: transform, opacity;
 }
 
 /* Custom scrollbar for carousels */
@@ -76,64 +87,15 @@
   display: none;
 }
 
-/* Gradient overlays */
-.gradient-hero-bottom {
-  background: linear-gradient(to top, hsl(222 47% 6%) 0%, transparent 100%);
+/* Touch support for carousels */
+.row-scroll-container {
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
 }
-.gradient-hero-left {
-  background: linear-gradient(to right, hsl(222 47% 6%) 0%, transparent 60%);
-}
-.gradient-hero-right {
-  background: linear-gradient(to left, hsl(222 47% 6%) 0%, transparent 30%);
-}
+
+/* Universal Overlap & Expansion Utilities */
 @layer utilities {
-  .glass-nav {
-    @apply bg-background/60 backdrop-blur-xl border-b border-white/10 shadow-2xl;
-  }
-  .glass-card {
-    @apply bg-white/5 backdrop-blur-md border border-white/10;
-  }
-  .gradient-nav {
-    background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
-  }
-  .text-shadow-premium {
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8), 0 0 10px rgba(0, 0, 0, 0.5);
-  }
-
-  /* Cinecasa 3D Glowing Buttons */
-  .btn-glow-primary, .btn-glow-secondary {
-    transition: 0.2s;
-    box-shadow: 0 4px 0 var(--glow);
-    cursor: pointer;
-    border: none;
-    border-radius: 4px;
-  }
-  .btn-glow-primary {
-    background: #fff;
-    color: #000;
-  }
-  .btn-glow-secondary {
-    background: var(--glass);
-    color: #fff;
-    backdrop-filter: blur(10px);
-  }
-  .btn-glow-primary:hover, .btn-glow-secondary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 0 var(--glow);
-  }
-  .btn-glow-primary:active, .btn-glow-secondary:active {
-    transform: translateY(2px);
-    box-shadow: 0 1px 0 var(--glow);
-  }
-
-  :focus-visible {
-    outline: 4px solid #00A8E1 !important; /* Cinecasa TV Style Focus */
-    outline-offset: 4px;
-    box-shadow: 0 0 20px rgba(0, 168, 225, 0.8) !important;
-    border-radius: 8px;
-  }
-
-  /* Universal Overlap & Expansion Utilities */
   .row-wrapper {
     @apply relative mb-8 z-10 transition-all duration-300;
   }
@@ -142,9 +104,22 @@
   }
   .row-scroll-container {
     @apply flex gap-4 md:gap-6 overflow-x-auto scrollbar-hide px-4 md:px-8 lg:px-12 py-24 -my-24 overflow-y-visible focus:outline-none;
-    scroll-snap-type: x mandatory;
   }
   .row-title {
-    @apply text-[clamp(1.2rem,1.8vw,1.6rem)] font-bold text-white px-4 md:px-8 lg:px-12 mb-6 tracking-tight drop-shadow-lg text-shadow-premium;
+    @apply text-[clamp(1.2rem,2.5vw,2.2rem)] font-bold text-white px-4 md:px-8 lg:px-12 mb-6 tracking-tight drop-shadow-lg text-shadow-premium;
+  }
+
+  :focus-visible {
+    outline: 4px solid #00A8E1 !important; /* Cinecasa TV Style Focus */
+    outline-offset: 4px;
+    box-shadow: 0 0 30px rgba(0, 168, 225, 0.9) !important;
+    border-radius: 8px;
+  }
+
+  /* 4K/Projetor scaling - specific for very large screens */
+  @media (min-width: 2560px) {
+    :root {
+      font-size: 20px;
+    }
   }
 }

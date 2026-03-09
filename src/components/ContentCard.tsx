@@ -103,10 +103,17 @@ const ContentCard = ({ item, index, isLast = false, showProgress = false }: Cont
 
     if (e.key === "ArrowRight") {
       e.preventDefault();
-      const allCards = Array.from(document.querySelectorAll('[tabindex="0"]'));
+      const allCards = Array.from(document.querySelectorAll('.row-scroll-container [tabindex="0"]'));
       const currentIndex = allCards.indexOf(containerRef.current!);
-      const next = allCards[currentIndex + 1] as HTMLElement;
-      if (next && next.classList.contains('relative')) { // Verifica se ainda é um card ou similar
+      let next = allCards[currentIndex + 1] as HTMLElement;
+      
+      // Loop: Se chegar no último, volta para o primeiro da linha atual
+      if (!next) {
+        const row = containerRef.current?.closest('.row-scroll-container');
+        next = row?.querySelector('[tabindex="0"]') as HTMLElement;
+      }
+
+      if (next) {
         next.focus();
         next.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
       }
@@ -114,15 +121,17 @@ const ContentCard = ({ item, index, isLast = false, showProgress = false }: Cont
 
     if (e.key === "ArrowLeft") {
       e.preventDefault();
-      const allCards = Array.from(document.querySelectorAll('[tabindex="0"]'));
+      const allCards = Array.from(document.querySelectorAll('.row-scroll-container [tabindex="0"]'));
       const currentIndex = allCards.indexOf(containerRef.current!);
-      const prev = allCards[currentIndex - 1] as HTMLElement;
+      let prev = allCards[currentIndex - 1] as HTMLElement;
+
       if (prev) {
         prev.focus();
         prev.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
       } else {
-        // Se for o primeiro card, talvez queira ir para o menu lateral ou navbar
-        document.querySelector('.nav-link-item')?.focus();
+        // Se for o primeiro card, volta para o menu
+        const navLinks = document.querySelectorAll('.nav-link-item');
+        (navLinks[0] as HTMLElement)?.focus();
       }
     }
 
@@ -130,8 +139,6 @@ const ContentCard = ({ item, index, isLast = false, showProgress = false }: Cont
       e.preventDefault();
       const currentRow = containerRef.current?.closest(".row-wrapper");
       let nextRow = currentRow?.nextElementSibling;
-      
-      // Pular elementos que não são linhas (como divisores ou spacers)
       while (nextRow && !nextRow.querySelector('[tabindex="0"]')) {
         nextRow = nextRow.nextElementSibling;
       }
@@ -140,6 +147,9 @@ const ContentCard = ({ item, index, isLast = false, showProgress = false }: Cont
       if (nextFocusable) {
         nextFocusable.focus();
         nextFocusable.scrollIntoView({ behavior: "smooth", block: "center" });
+      } else {
+        // Se não houver linha abaixo, focar no footer ou primeiro link
+        (document.querySelector('footer a') as HTMLElement)?.focus();
       }
     }
 
