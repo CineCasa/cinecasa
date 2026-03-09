@@ -121,7 +121,7 @@ const NetflixPlayer = ({ url, title, historyItem, onClose }: NetflixPlayerProps)
     >
       {isYouTube ? (
         <iframe
-          src={`${url}?autoplay=1&controls=0&mute=${isMuted ? 1 : 0}&modestbranding=1&rel=0&iv_load_policy=3`}
+          src={`${url}${url.includes("?") ? "&" : "?"}autoplay=1&controls=0&mute=${isMuted ? 1 : 0}&modestbranding=1&rel=0&iv_load_policy=3`}
           className="w-screen h-screen pointer-events-none"
           allow="autoplay; fullscreen"
           title={title}

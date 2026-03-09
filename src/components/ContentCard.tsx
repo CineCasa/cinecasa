@@ -79,9 +79,9 @@ const ContentCard = ({ item, index, isLast = false, showProgress = false }: Cont
   const handleMouseEnter = () => {
     hoverTimeout.current = setTimeout(() => {
       setIsHovered(true);
-      // Trailer delay of 1500ms as requested
-      trailerLoadTimeout.current = setTimeout(() => setShowTrailer(true), 1500);
-    }, 400);
+      // Trailer delay reduced for faster response
+      trailerLoadTimeout.current = setTimeout(() => setShowTrailer(true), 1000);
+    }, 150);
   };
 
   const handleMouseLeave = () => {
@@ -172,23 +172,23 @@ const ContentCard = ({ item, index, isLast = false, showProgress = false }: Cont
               opacity: 1,
               y: -10,
               width: "160%",
+              height: "auto"
             }}
             exit={{ scale: 1, opacity: 0, y: 0, width: "100%" }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
             style={{ 
               transformOrigin: getTransformOrigin(),
               zIndex: 100000,
-              aspectRatio: "16 / 9"
             }}
-            className="absolute top-0 left-0 bg-[#1b1b1b] rounded-lg shadow-[0_20px_40px_rgba(0,0,0,0.9)] overflow-hidden ring-1 ring-white/20"
+            className="absolute top-0 left-0 bg-[#1b1b1b] rounded-lg shadow-[0_20px_40px_rgba(0,0,0,0.9)] overflow-hidden ring-1 ring-white/20 w-[160%] h-auto"
           >
-            {/* TOP: MEDIA SECTION */}
-            <div className={`relative w-full h-full overflow-hidden bg-black ${showTrailer ? "" : "aspect-video"}`}>
+            {/* TOP: MEDIA SECTION (VIDEO OR PHOTO) */}
+            <div className={`relative w-full aspect-video overflow-hidden bg-black`}>
               {showTrailer && trailerUrl ? (
                 <iframe
                   src={trailerUrl.includes("?") 
-                    ? `${trailerUrl}&autoplay=1&controls=0&mute=0&loop=1&origin=${window.location.origin}` 
-                    : `${trailerUrl}?autoplay=1&controls=0&mute=0&loop=1&origin=${window.location.origin}`}
+                    ? `${trailerUrl}&autoplay=1&mute=1&controls=0&loop=1&origin=${window.location.origin}` 
+                    : `${trailerUrl}?autoplay=1&mute=1&controls=0&loop=1&origin=${window.location.origin}`}
                   className="absolute inset-0 w-full h-full object-cover scale-[1.05]"
                   allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
                   title={item.title}

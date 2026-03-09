@@ -75,6 +75,6 @@ export const getTmdbTrailerUrl = (videos: any) => {
     (v: any) => v.type === "Trailer" && v.site === "YouTube"
   ) || videos.results.find((v: any) => v.site === "YouTube");
   
-  if (trailer) return `https://www.youtube-nocookie.com/embed/${trailer.key}?autoplay=1&mute=1&controls=0&loop=1&playlist=${trailer.key}&rel=0&showinfo=0&origin=${window.location.origin}`;
+  if (trailer) return `https://www.youtube.com/embed/${trailer.key}?autoplay=1&mute=1&loop=1&playlist=${trailer.key}`;
   return null;
 };
