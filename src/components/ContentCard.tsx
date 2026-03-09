@@ -32,6 +32,14 @@ const ContentCard = ({ item, index, isLast = false, showProgress = false }: Cont
   };
 
   useEffect(() => {
+    // Carregar estado inicial de favorito do localStorage
+    try {
+      const favs = JSON.parse(localStorage.getItem("paixaofavs") || "[]");
+      setIsFavorite(favs.some((f: any) => f.id === item.id));
+    } catch (e) {
+      console.error(e);
+    }
+
     if (isHovered && item.tmdbId && !metadata) {
       const type = item.id.includes("series") ? "tv" : "movie";
       fetchTmdbDetails(item.tmdbId, type).then((data) => {
@@ -49,7 +57,24 @@ const ContentCard = ({ item, index, isLast = false, showProgress = false }: Cont
         }
       });
     }
-  }, [isHovered, item.tmdbId]);
+  }, [isHovered, item.tmdbId, item.id]);
+
+  const toggleFavorite = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const favs = JSON.parse(localStorage.getItem("paixaofavs") || "[]");
+      let newFavs;
+      if (isFavorite) {
+        newFavs = favs.filter((f: any) => f.id !== item.id);
+      } else {
+        newFavs = [...favs, item];
+      }
+      localStorage.setItem("paixaofavs", JSON.stringify(newFavs));
+      setIsFavorite(!isFavorite);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const handleMouseEnter = () => {
     hoverTimeout.current = setTimeout(() => {
@@ -82,15 +107,12 @@ const ContentCard = ({ item, index, isLast = false, showProgress = false }: Cont
 
   const getTransformOrigin = () => {
     const el = containerRef.current;
-    if (!el) return "left center"; // Default Prime Video style: expand from left to right
+    if (!el) return "left center"; 
     
     const rect = el.getBoundingClientRect();
     const windowWidth = window.innerWidth;
     
-    // Se estiver muito perto da borda direita, expande para a esquerda para não sumir da tela
     if (rect.right > windowWidth - 150) return "right center";
-    
-    // Padrão Prime: Fixa a esquerda e cresce para a direita
     return "left center";
   };
 
@@ -113,7 +135,7 @@ const ContentCard = ({ item, index, isLast = false, showProgress = false }: Cont
         isHovered ? "z-[99999]" : "z-0"
       }`}
     >
-      {/* BASE PORTRAIT IMAGE (Visible when NOT hovered) */}
+      {/* BASE PORTRAIT IMAGE */}
       <div className={`w-full h-full rounded-lg overflow-hidden bg-secondary shadow-lg transition-opacity duration-300 ${isHovered ? "opacity-0" : "opacity-100"}`}>
         <img
           src={item.image}
@@ -140,27 +162,27 @@ const ContentCard = ({ item, index, isLast = false, showProgress = false }: Cont
         </div>
       </div>
 
-      {/* EXPANDED STATE (Floating Overlay) */}
+      {/* EXPANDED STATE */}
       <AnimatePresence>
         {isHovered && (
           <motion.div
             initial={{ scale: 1, opacity: 0, y: 0 }}
             animate={{ 
-              scale: 1.25, // Expansão mais agressiva estilo Prime Video
+              scale: 1.25,
               opacity: 1,
               y: -10,
-              width: "160%", // Aumenta a largura para simular o formato landscape (16:9) a partir do portrait
+              width: "160%",
             }}
             exit={{ scale: 1, opacity: 0, y: 0, width: "100%" }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
             style={{ 
               transformOrigin: getTransformOrigin(),
               zIndex: 100000,
-              aspectRatio: "16 / 9" // Força o formato de vídeo
+              aspectRatio: "16 / 9"
             }}
             className="absolute top-0 left-0 bg-[#1b1b1b] rounded-lg shadow-[0_20px_40px_rgba(0,0,0,0.9)] overflow-hidden ring-1 ring-white/20"
           >
-            {/* TOP: MEDIA SECTION (VIDEO OR PHOTO) - Preenche tudo se tiver trailer */}
+            {/* TOP: MEDIA SECTION */}
             <div className={`relative w-full h-full overflow-hidden bg-black ${showTrailer ? "" : "aspect-video"}`}>
               {showTrailer && trailerUrl ? (
                 <iframe
@@ -187,41 +209,48 @@ const ContentCard = ({ item, index, isLast = false, showProgress = false }: Cont
               )}
             </div>
 
-            {/* BOTTOM: METADATA SECTION (Only visible if NOT playing trailer) */}
-            {!showTrailer && (
-              <div className="p-4 flex flex-col gap-3 bg-[#1b1b1b]">
-                <div className="flex items-center justify-between">
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={() => !item.isComingSoon && setIsPlayerOpen(true)}
-                      className={`p-2 rounded-full transition-colors ${item.isComingSoon ? "bg-white/30 text-white/50 cursor-not-allowed" : "bg-white text-black hover:bg-white/80"}`}
-                    >
-                      <Play size={16} fill="currentColor" />
-                    </button>
-                    <button className="p-2 rounded-full border border-white/40 text-white hover:bg-white/10 transition-colors">
-                      <Plus size={16} />
-                    </button>
-                    <button 
-                      onClick={handleNavigateToDetails}
-                      className={`p-2 rounded-full border border-white/40 transition-colors ${item.isComingSoon ? "text-white/30 border-white/20 cursor-not-allowed" : "text-white hover:bg-white/10"}`}
-                      title="Mais Informações"
-                    >
-                      <Info size={16} />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <span className="text-[#ffff5c] font-black text-xs">
-                    {metadata?.rating || item.rating} Relevante
-                  </span>
-                  <span className="text-white font-bold text-[10px] px-1.5 py-0.5 border border-white/40 rounded leading-none">
-                    {item.rating}
-                  </span>
-                  <span className="text-white/60 text-xs">{item.year}</span>
+            {/* BOTTOM: METADATA & ACTIONS */}
+            <div className="p-4 flex flex-col gap-3 bg-[#1b1b1b] border-t border-white/5">
+              <div className="flex items-center justify-between">
+                <div className="flex gap-2 items-center">
+                  <button 
+                    onClick={() => !item.isComingSoon && setIsPlayerOpen(true)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-md font-bold text-xs transition-all ${item.isComingSoon ? "bg-white/30 text-white/50 cursor-not-allowed" : "bg-white text-black hover:bg-white/80 active:scale-95"}`}
+                    title="Assistir Agora"
+                  >
+                    <Play size={14} fill="currentColor" />
+                    Assistir Agora
+                  </button>
+                  <button 
+                    onClick={toggleFavorite}
+                    className="p-2 rounded-full border border-white/40 text-red-600 hover:bg-white/10 transition-colors active:scale-90"
+                    title={isFavorite ? "Remover dos Favoritos" : "Adicionar aos Favoritos"}
+                  >
+                    <Heart size={18} fill={isFavorite ? "currentColor" : "none"} stroke="currentColor" />
+                  </button>
+                  <button 
+                    onClick={handleNavigateToDetails}
+                    className={`p-2 rounded-full border border-white/40 transition-colors ${item.isComingSoon ? "text-white/30 border-white/20 cursor-not-allowed" : "text-white hover:bg-white/10"}`}
+                    title="Mais Informações"
+                  >
+                    <Info size={18} />
+                  </button>
                 </div>
               </div>
-            )}
+
+              <div className="flex items-center gap-3">
+                <span className="text-[#ffff5c] font-black text-xs">
+                  {metadata?.rating || item.rating} Relevante
+                </span>
+                <span className="text-white/60 text-xs font-bold">{item.year}</span>
+                <span className="text-white/40 text-[10px] px-1.5 py-0.5 border border-white/20 rounded leading-none uppercase">
+                  {item.rating}
+                </span>
+                {metadata?.duration && (
+                  <span className="text-white/60 text-xs">{metadata.duration}</span>
+                )}
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
