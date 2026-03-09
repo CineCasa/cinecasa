@@ -16,6 +16,9 @@ import Favorites from "./pages/Favorites";
 import Search from "./pages/Search";
 import NotFound from "./pages/NotFound";
 import NetflixLoader from "./components/NetflixLoader";
+import Login from "./pages/Login";
+import { AuthProvider } from "./components/AuthProvider";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -27,7 +30,7 @@ const HomeRedirect = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const hasRedirected = sessionStorage.getItem("initialRedirect");
-    if (!hasRedirected && location.pathname !== "/") {
+    if (!hasRedirected && location.pathname !== "/" && location.pathname !== "/login") {
        navigate("/", { replace: true });
        sessionStorage.setItem("initialRedirect", "true");
     }
@@ -35,8 +38,6 @@ const HomeRedirect = ({ children }: { children: React.ReactNode }) => {
 
   return <>{children}</>;
 };
-
-import Login from "./pages/Login";
 
 const AppRoutes = () => {
   const location = useLocation();
@@ -51,16 +52,16 @@ const AppRoutes = () => {
         transition={{ duration: 0.3, ease: "easeOut" }}
       >
         <Routes location={location}>
-          <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/cinema" element={<Cinema />} />
-          <Route path="/series" element={<Series />} />
-          <Route path="/tv-live" element={<TvAoVivo />} />
-          <Route path="/kids-movies" element={<FilmesKids />} />
-          <Route path="/kids-series" element={<SeriesKids />} />
-          <Route path="/details/:type/:id" element={<Details />} />
-          <Route path="/favorites" element={<Favorites />} />
-          <Route path="/search" element={<Search />} />
+          <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+          <Route path="/cinema" element={<ProtectedRoute><Cinema /></ProtectedRoute>} />
+          <Route path="/series" element={<ProtectedRoute><Series /></ProtectedRoute>} />
+          <Route path="/tv-live" element={<ProtectedRoute><TvAoVivo /></ProtectedRoute>} />
+          <Route path="/kids-movies" element={<ProtectedRoute><FilmesKids /></ProtectedRoute>} />
+          <Route path="/kids-series" element={<ProtectedRoute><SeriesKids /></ProtectedRoute>} />
+          <Route path="/details/:type/:id" element={<ProtectedRoute><Details /></ProtectedRoute>} />
+          <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
+          <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
           <Route path="/admin/data-loader" element={<DataLoader />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
@@ -75,18 +76,20 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <AnimatePresence>
-          {loading && <NetflixLoader onComplete={() => setLoading(false)} />}
-        </AnimatePresence>
-        {!loading && (
-          <BrowserRouter>
-            <HomeRedirect>
-              <AppRoutes />
-            </HomeRedirect>
-          </BrowserRouter>
-        )}
+        <AuthProvider>
+          <Toaster />
+          <Sonner />
+          <AnimatePresence>
+            {loading && <NetflixLoader onComplete={() => setLoading(false)} />}
+          </AnimatePresence>
+          {!loading && (
+            <BrowserRouter>
+              <HomeRedirect>
+                <AppRoutes />
+              </HomeRedirect>
+            </BrowserRouter>
+          )}
+        </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

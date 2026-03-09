@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
-import { Search, Bell, User, Menu, X } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Search, Bell, User, Menu, X, LogOut } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "./AuthProvider";
 
 const navItems = [
   { label: "Início", path: "/" },
@@ -17,7 +18,10 @@ const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
+  const { signOut, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -25,6 +29,16 @@ const Navbar = () => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -35,6 +49,11 @@ const Navbar = () => {
     } else if (location.pathname === "/search") {
       navigate("/");
     }
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/login");
   };
 
   return (
@@ -117,9 +136,34 @@ const Navbar = () => {
             </button>
           </div>
 
-          <button className="p-2 text-white/80 hover:text-white transition-colors rounded-full focus-visible">
-            <User size={26} />
-          </button>
+          {/* User Menu */}
+          <div className="relative" ref={menuRef}>
+            <button 
+              onClick={() => setUserMenuOpen(!userMenuOpen)}
+              className="p-2 text-white/80 hover:text-white transition-colors rounded-full focus-visible flex items-center gap-2"
+            >
+              <User size={26} />
+              <span className="hidden sm:inline text-xs truncate max-w-[100px] text-white/60">
+                {user?.email?.split('@')[0]}
+              </span>
+            </button>
+
+            {userMenuOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-[#19232b] border border-white/10 rounded-lg shadow-2xl py-2 z-[60]">
+                <div className="px-4 py-2 border-b border-white/5 mb-1">
+                  <p className="text-[10px] text-white/40 uppercase tracking-wider font-bold">Logado como</p>
+                  <p className="text-xs text-white/80 truncate font-semibold">{user?.email}</p>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="w-full text-left px-4 py-3 hover:bg-white/5 text-white/80 hover:text-white transition-colors flex items-center gap-3 text-sm"
+                >
+                  <LogOut size={16} />
+                  Sair do Cinecasa
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
