@@ -2,10 +2,13 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ContentItem, Category } from "@/data/content";
 import { tmdbImageUrl, fetchTmdbDetails } from "@/services/tmdb";
+import { useAuth } from "@/components/AuthProvider";
 
 export const useSupabaseContent = () => {
+  const { plan } = useAuth();
+
   return useQuery({
-    queryKey: ["supabase-content"],
+    queryKey: ["supabase-content", plan],
     queryFn: async () => {
       // 1. Fetch Supabase Data Recursively to bypass the 1000 rows limit
       const fetchAllRecords = async (table: "cinema" | "filmes_kids" | "series" | "series_kids" | "tv_ao_vivo") => {
@@ -177,7 +180,6 @@ export const useSupabaseContent = () => {
                 if (catName.startsWith("Lançamento")) continue;
                 
                 const catNameLower = catName.toLowerCase();
-                // Special mapping logic for complex TMDB Portuguese/English genres to ensure they hit your strict categories
                 const hasMatch = itemCats.some(g => {
                   if (g === catNameLower || g.includes(catNameLower)) return true;
                   if (catNameLower === "ação" && g.includes("action")) return true;
@@ -197,7 +199,6 @@ export const useSupabaseContent = () => {
                 if (hasMatch && grouped[catName]) {
                    grouped[catName].push(item);
                    allocated = true;
-                   // Removed break to allow multiple categories
                 }
              }
           }
@@ -219,168 +220,145 @@ export const useSupabaseContent = () => {
           .filter(cat => cat.items.length > 0);
       };
 
-      let cinemaWithData: ContentItem[] = [];
+      // Fetch TMDB data in chunks for all tables
+      const cinemaWithData: ContentItem[] = [];
       if (cinema && cinema.length > 0) {
-        const chunkSize = 50;
-        for (let i = 0; i < cinema.length; i += chunkSize) {
-          const chunk = cinema.slice(i, i + chunkSize);
-          const chunkResults = await Promise.all(
-            chunk.map(async (item: any) => {
-              const base = mapCinema(item);
-              if (!item.tmdb_id) return base;
-              const data = await fetchTmdbDetails(item.tmdb_id, "movie");
-              if (!data) return base;
-              return {
-                ...base,
-                image: data.poster_path ? tmdbImageUrl(data.poster_path, "w500") : base.image,
-                backdrop: data.backdrop_path ? tmdbImageUrl(data.backdrop_path, "original") : base.backdrop,
-                year: parseInt(data.release_date?.split("-")[0] || item.year || "0"),
-                rating: data.vote_average?.toFixed(1) || item.rating || "N/A",
-                genre: data.genres?.map((g: any) => g.name) || base.genre
-              };
-            })
-          );
+        for (let i = 0; i < cinema.length; i += 50) {
+          const chunkResults = await Promise.all(cinema.slice(i, i + 50).map(async (item: any) => {
+            const base = mapCinema(item);
+            if (!item.tmdb_id) return base;
+            const data = await fetchTmdbDetails(item.tmdb_id, "movie");
+            if (!data) return base;
+            return {
+              ...base,
+              image: data.poster_path ? tmdbImageUrl(data.poster_path, "w500") : base.image,
+              backdrop: data.backdrop_path ? tmdbImageUrl(data.backdrop_path, "original") : base.backdrop,
+              year: parseInt(data.release_date?.split("-")[0] || item.year || "0"),
+              rating: data.vote_average?.toFixed(1) || item.rating || "N/A",
+              genre: data.genres?.map((g: any) => g.name) || base.genre
+            };
+          }));
           cinemaWithData.push(...chunkResults);
-          if (cinema.length > 500) await new Promise(r => setTimeout(r, 100));
         }
       }
 
-      if (cinemaWithData.length > 0) {
-        const uniqueCinemaMap = new Map();
-        cinemaWithData.forEach(c => {
-           const key = c.title.toLowerCase().trim();
-           if (!uniqueCinemaMap.has(key)) {
-             uniqueCinemaMap.set(key, c);
-           }
-        });
-        categories.push(...allocateItemsToMasterCategories(Array.from(uniqueCinemaMap.values()), "cinema", "Ação"));
-      }
-
-      // Fetch TMDB data for SERIES safely in batches. Covers are wrong/blank without this!
-      let seriesWithData: ContentItem[] = [];
+      const seriesWithData: ContentItem[] = [];
       if (series && series.length > 0) {
-        const chunkSize = 40; // Max parallel requests per batch (safe for TMDB 50 req/s limit)
-        for (let i = 0; i < series.length; i += chunkSize) {
-          const chunk = series.slice(i, i + chunkSize);
-          const chunkResults = await Promise.all(
-            chunk.map(async (s: any) => {
-              if (!s.tmdb_id) return mapSeries(s);
-              const data = await fetchTmdbDetails(s.tmdb_id, "tv");
-              if (!data) return mapSeries(s);
-              
-              const genres = data.genres?.map((g: any) => g.name) || splitGenres(s.genero || s.category);
-              
-              return {
-                ...mapSeries(s),
-                image: data.poster_path ? tmdbImageUrl(data.poster_path, "w500") : tmdbImageUrl(s.poster, "w500"),
-                backdrop: data.backdrop_path ? tmdbImageUrl(data.backdrop_path, "original") : tmdbImageUrl(s.poster, "original"),
-                year: parseInt(data.first_air_date?.split("-")[0] || "0"),
-                rating: data.vote_average?.toFixed(1) || "N/A",
-                genre: genres
-              };
-            })
-          );
+        for (let i = 0; i < series.length; i += 40) {
+          const chunkResults = await Promise.all(series.slice(i, i + 40).map(async (s: any) => {
+            if (!s.tmdb_id) return mapSeries(s);
+            const data = await fetchTmdbDetails(s.tmdb_id, "tv");
+            if (!data) return mapSeries(s);
+            return {
+              ...mapSeries(s),
+              image: data.poster_path ? tmdbImageUrl(data.poster_path, "w500") : tmdbImageUrl(s.poster, "w500"),
+              backdrop: data.backdrop_path ? tmdbImageUrl(data.backdrop_path, "original") : tmdbImageUrl(s.poster, "original"),
+              year: parseInt(data.first_air_date?.split("-")[0] || "0"),
+              rating: data.vote_average?.toFixed(1) || "N/A",
+              genre: data.genres?.map((g: any) => g.name) || splitGenres(s.genero || s.category)
+            };
+          }));
           seriesWithData.push(...chunkResults);
-          // Small delay for rate limits when loading 5000+ series
-          if (series.length > 200) {
-            await new Promise(resolve => setTimeout(resolve, 300));
-          }
         }
       }
 
-      if (seriesWithData.length > 0) {
-         const uniqueSeriesMap = new Map();
-         seriesWithData.forEach(s => {
-           const key = s.title.toLowerCase().trim();
-           if (!uniqueSeriesMap.has(key)) {
-             uniqueSeriesMap.set(key, s);
-           }
-         });
-         categories.push(...allocateItemsToMasterCategories(Array.from(uniqueSeriesMap.values()), "series", "Drama"));
-      }
-
-      let kidsMoviesWithData: ContentItem[] = [];
+      const kidsMoviesWithData: ContentItem[] = [];
       if (filmesKids && filmesKids.length > 0) {
-        const chunkSize = 50;
-        for (let i = 0; i < filmesKids.length; i += chunkSize) {
-          const chunk = filmesKids.slice(i, i + chunkSize);
-          const chunkResults = await Promise.all(
-            chunk.map(async (item: any) => {
-              const base = mapFilmesKids(item);
-              if (!item.tmdb_id) return base;
-              const data = await fetchTmdbDetails(item.tmdb_id, "movie");
-              if (!data) return base;
-              return {
-                ...base,
-                image: data.poster_path ? tmdbImageUrl(data.poster_path, "w500") : base.image,
-                backdrop: data.backdrop_path ? tmdbImageUrl(data.backdrop_path, "original") : base.backdrop,
-                year: parseInt(data.release_date?.split("-")[0] || item.year || "0"),
-                rating: data.vote_average?.toFixed(1) || item.rating || "L",
-                genre: data.genres?.map((g: any) => g.name) || base.genre
-              };
-            })
-          );
+        for (let i = 0; i < filmesKids.length; i += 50) {
+          const chunkResults = await Promise.all(filmesKids.slice(i, i + 50).map(async (item: any) => {
+            const base = mapFilmesKids(item);
+            if (!item.tmdb_id) return base;
+            const data = await fetchTmdbDetails(item.tmdb_id, "movie");
+            if (!data) return base;
+            return {
+              ...base,
+              image: data.poster_path ? tmdbImageUrl(data.poster_path, "w500") : base.image,
+              backdrop: data.backdrop_path ? tmdbImageUrl(data.backdrop_path, "original") : base.backdrop,
+              year: parseInt(data.release_date?.split("-")[0] || item.year || "0"),
+              rating: data.vote_average?.toFixed(1) || item.rating || "L",
+              genre: data.genres?.map((g: any) => g.name) || base.genre
+            };
+          }));
           kidsMoviesWithData.push(...chunkResults);
         }
       }
 
-      if (kidsMoviesWithData.length > 0) {
-        const uniqueKidsMap = new Map();
-        kidsMoviesWithData.forEach(c => {
-           const key = c.title.toLowerCase().trim();
-           if (!uniqueKidsMap.has(key)) uniqueKidsMap.set(key, c);
-        });
-        categories.push({
-          id: "kids-movies",
-          title: "Filmes Infantis",
-          items: Array.from(uniqueKidsMap.values())
-        });
-      }
-
-      let kidsSeriesWithData: ContentItem[] = [];
+      const kidsSeriesWithData: ContentItem[] = [];
       if (seriesKids && seriesKids.length > 0) {
-        const chunkSize = 50;
-        for (let i = 0; i < seriesKids.length; i += chunkSize) {
-          const chunk = seriesKids.slice(i, i + chunkSize);
-          const chunkResults = await Promise.all(
-            chunk.map(async (item: any) => {
-              const base = mapSeriesKids(item);
-              if (!item.tmdb_id) return base;
-              const data = await fetchTmdbDetails(item.tmdb_id, "tv");
-              if (!data) return base;
-              return {
-                ...base,
-                image: data.poster_path ? tmdbImageUrl(data.poster_path, "w500") : base.image,
-                backdrop: data.backdrop_path ? tmdbImageUrl(data.backdrop_path, "original") : base.backdrop,
-                year: parseInt(data.first_air_date?.split("-")[0] || item.year || "0"),
-                rating: data.vote_average?.toFixed(1) || item.rating || "L",
-                genre: data.genres?.map((g: any) => g.name) || base.genre
-              };
-            })
-          );
+        for (let i = 0; i < seriesKids.length; i += 50) {
+          const chunkResults = await Promise.all(seriesKids.slice(i, i + 50).map(async (item: any) => {
+            const base = mapSeriesKids(item);
+            if (!item.tmdb_id) return base;
+            const data = await fetchTmdbDetails(item.tmdb_id, "tv");
+            if (!data) return base;
+            return {
+              ...base,
+              image: data.poster_path ? tmdbImageUrl(data.poster_path, "w500") : base.image,
+              backdrop: data.backdrop_path ? tmdbImageUrl(data.backdrop_path, "original") : base.backdrop,
+              year: parseInt(data.first_air_date?.split("-")[0] || item.year || "0"),
+              rating: data.vote_average?.toFixed(1) || item.rating || "L",
+              genre: data.genres?.map((g: any) => g.name) || base.genre
+            };
+          }));
           kidsSeriesWithData.push(...chunkResults);
         }
       }
 
-      if (kidsSeriesWithData.length > 0) {
+      // 2. Planning logic
+      if (plan === "none") return [];
+
+      let finalCinema = cinemaWithData;
+      let finalSeries = seriesWithData;
+      let finalKidsMovies = kidsMoviesWithData;
+      let finalKidsSeries = kidsSeriesWithData;
+      let finalTv = tvAoVivo;
+
+      if (plan === "basic") {
+        finalCinema = cinemaWithData.filter(c => c.year < 2025).slice(0, 50);
+        finalSeries = seriesWithData.filter(s => s.year <= 2023).slice(0, 50);
+        finalKidsMovies = kidsMoviesWithData.slice(0, 10);
+        finalKidsSeries = kidsSeriesWithData.slice(0, 5);
+        finalTv = [];
+      }
+
+      if (finalCinema.length > 0) {
+        const uniqueCinemaMap = new Map();
+        finalCinema.forEach(c => {
+           const key = c.title.toLowerCase().trim();
+           if (!uniqueCinemaMap.has(key)) uniqueCinemaMap.set(key, c);
+        });
+        categories.push(...allocateItemsToMasterCategories(Array.from(uniqueCinemaMap.values()), "cinema", "Ação"));
+      }
+
+      if (finalSeries.length > 0) {
+         const uniqueSeriesMap = new Map();
+         finalSeries.forEach(s => {
+           const key = s.title.toLowerCase().trim();
+           if (!uniqueSeriesMap.has(key)) uniqueSeriesMap.set(key, s);
+         });
+         categories.push(...allocateItemsToMasterCategories(Array.from(uniqueSeriesMap.values()), "series", "Drama"));
+      }
+
+      if (finalKidsMovies.length > 0) {
+        const uniqueKidsMap = new Map();
+        finalKidsMovies.forEach(c => {
+           const key = c.title.toLowerCase().trim();
+           if (!uniqueKidsMap.has(key)) uniqueKidsMap.set(key, c);
+        });
+        categories.push({ id: "kids-movies", title: "Filmes Infantis", items: Array.from(uniqueKidsMap.values()) });
+      }
+
+      if (finalKidsSeries.length > 0) {
         const uniqueSeriesKidsMap = new Map();
-        kidsSeriesWithData.forEach(c => {
+        finalKidsSeries.forEach(c => {
            const key = c.title.toLowerCase().trim();
            if (!uniqueSeriesKidsMap.has(key)) uniqueSeriesKidsMap.set(key, c);
         });
-        categories.push({
-          id: "kids-series",
-          title: "Séries Infantis",
-          items: Array.from(uniqueSeriesKidsMap.values())
-        });
+        categories.push({ id: "kids-series", title: "Séries Infantis", items: Array.from(uniqueSeriesKidsMap.values()) });
       }
 
-      if (tvAoVivo && tvAoVivo.length > 0) {
-        categories.push({
-          id: "tv-live",
-          title: "TV ao Vivo",
-          items: tvAoVivo.map(mapTv)
-        });
+      if (finalTv && finalTv.length > 0) {
+        categories.push({ id: "tv-live", title: "TV ao Vivo", items: finalTv.map(mapTv) });
       }
 
       return categories;

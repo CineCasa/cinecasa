@@ -160,13 +160,27 @@ const HeroBanner = ({ filterCategory }: HeroBannerProps) => {
             <div className="flex gap-4">
               <button 
                 onClick={() => setIsPlayerOpen(true)}
-                className="flex items-center gap-3 btn-glow-primary font-bold text-[clamp(0.9rem,1.2vw,1.1rem)] px-6 sm:px-8 py-3 sm:py-4 transition-transform z-10"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "ArrowDown") {
+                    e.preventDefault();
+                    (document.querySelector('[tabindex="0"]:not(.hero-action-btn):not(.nav-link-item)') as HTMLElement)?.focus();
+                  }
+                }}
+                className="hero-action-btn flex items-center gap-3 btn-glow-primary font-bold text-[clamp(0.9rem,1.2vw,1.1rem)] px-6 sm:px-8 py-3 sm:py-4 transition-transform z-10 focus-visible:ring-4 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black outline-none"
               >
                 <Play size={24} fill="currentColor" /> Assistir Agora
               </button>
               <button 
                 onClick={() => navigate(`/details/${hero.id.includes("series") ? "series" : "cinema"}/${hero.tmdbId || hero.id}`)}
-                className="flex items-center gap-3 btn-glow-secondary font-bold text-[clamp(0.9rem,1.2vw,1.1rem)] px-6 sm:px-8 py-3 sm:py-4 transition-transform z-10"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "ArrowDown") {
+                    e.preventDefault();
+                    (document.querySelector('[tabindex="0"]:not(.hero-action-btn):not(.nav-link-item)') as HTMLElement)?.focus();
+                  }
+                }}
+                className="hero-action-btn flex items-center gap-3 btn-glow-secondary font-bold text-[clamp(0.9rem,1.2vw,1.1rem)] px-6 sm:px-8 py-3 sm:py-4 transition-transform z-10 focus-visible:ring-4 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black outline-none"
               >
                 <Info size={24} /> Mais Informações
               </button>

@@ -103,14 +103,13 @@ const ContentCard = ({ item, index, isLast = false, showProgress = false }: Cont
 
     if (e.key === "ArrowRight") {
       e.preventDefault();
-      const allCards = Array.from(document.querySelectorAll('.row-scroll-container [tabindex="0"]'));
+      const row = containerRef.current?.closest('.row-scroll-container');
+      const allCards = Array.from(row?.querySelectorAll('[tabindex="0"]') || []);
       const currentIndex = allCards.indexOf(containerRef.current!);
       let next = allCards[currentIndex + 1] as HTMLElement;
       
-      // Loop: Se chegar no último, volta para o primeiro da linha atual
       if (!next) {
-        const row = containerRef.current?.closest('.row-scroll-container');
-        next = row?.querySelector('[tabindex="0"]') as HTMLElement;
+        next = allCards[0] as HTMLElement;
       }
 
       if (next) {
@@ -121,7 +120,8 @@ const ContentCard = ({ item, index, isLast = false, showProgress = false }: Cont
 
     if (e.key === "ArrowLeft") {
       e.preventDefault();
-      const allCards = Array.from(document.querySelectorAll('.row-scroll-container [tabindex="0"]'));
+      const row = containerRef.current?.closest('.row-scroll-container');
+      const allCards = Array.from(row?.querySelectorAll('[tabindex="0"]') || []);
       const currentIndex = allCards.indexOf(containerRef.current!);
       let prev = allCards[currentIndex - 1] as HTMLElement;
 
@@ -129,7 +129,6 @@ const ContentCard = ({ item, index, isLast = false, showProgress = false }: Cont
         prev.focus();
         prev.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
       } else {
-        // Se for o primeiro card, volta para o menu
         const navLinks = document.querySelectorAll('.nav-link-item');
         (navLinks[0] as HTMLElement)?.focus();
       }
@@ -143,12 +142,22 @@ const ContentCard = ({ item, index, isLast = false, showProgress = false }: Cont
         nextRow = nextRow.nextElementSibling;
       }
 
-      const nextFocusable = nextRow?.querySelector('[tabindex="0"]') as HTMLElement;
-      if (nextFocusable) {
-        nextFocusable.focus();
-        nextFocusable.scrollIntoView({ behavior: "smooth", block: "center" });
+      if (nextRow) {
+        const rect = containerRef.current?.getBoundingClientRect();
+        const allNextCards = Array.from(nextRow.querySelectorAll('[tabindex="0"]'));
+        
+        // Encontrar o card mais próximo horizontalmente
+        const closest = allNextCards.reduce((prev, curr) => {
+          const prevRect = (prev as HTMLElement).getBoundingClientRect();
+          const currRect = (curr as HTMLElement).getBoundingClientRect();
+          return Math.abs(currRect.left - rect!.left) < Math.abs(prevRect.left - rect!.left) ? curr : prev;
+        }) as HTMLElement;
+
+        if (closest) {
+          closest.focus();
+          closest.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
       } else {
-        // Se não houver linha abaixo, focar no footer ou primeiro link
         (document.querySelector('footer a') as HTMLElement)?.focus();
       }
     }
@@ -158,20 +167,31 @@ const ContentCard = ({ item, index, isLast = false, showProgress = false }: Cont
       const currentRow = containerRef.current?.closest(".row-wrapper");
       let prevRow = currentRow?.previousElementSibling;
 
-       // Pular elementos que não são linhas
-       while (prevRow && !prevRow.querySelector('[tabindex="0"]')) {
+      while (prevRow && !prevRow.querySelector('[tabindex="0"]')) {
         prevRow = prevRow.previousElementSibling;
       }
 
-      const prevFocusable = prevRow?.querySelector('[tabindex="0"]') as HTMLElement;
-      if (prevFocusable) {
-        prevFocusable.focus();
-        prevFocusable.scrollIntoView({ behavior: "smooth", block: "center" });
+      if (prevRow) {
+        const rect = containerRef.current?.getBoundingClientRect();
+        const allPrevCards = Array.from(prevRow.querySelectorAll('[tabindex="0"]'));
+        
+        const closest = allPrevCards.reduce((prev, curr) => {
+          const prevRect = (prev as HTMLElement).getBoundingClientRect();
+          const currRect = (curr as HTMLElement).getBoundingClientRect();
+          return Math.abs(currRect.left - rect!.left) < Math.abs(prevRect.left - rect!.left) ? curr : prev;
+        }) as HTMLElement;
+
+        if (closest) {
+          closest.focus();
+          closest.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
       } else {
-        // Se não houver linha acima, focar na Navbar
-        const navLinks = document.querySelectorAll('.nav-link-item');
-        if (navLinks.length > 0) {
-          (navLinks[0] as HTMLElement).focus();
+        const heroBtns = document.querySelectorAll('.hero-action-btn');
+        if (heroBtns.length > 0) {
+          (heroBtns[0] as HTMLElement).focus();
+        } else {
+          const navLinks = document.querySelectorAll('.nav-link-item');
+          (navLinks[0] as HTMLElement)?.focus();
         }
       }
     }

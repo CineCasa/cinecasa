@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Search, Bell, User, Menu, X, LogOut } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthProvider";
+import { useSupabaseContent } from "@/hooks/useSupabaseContent";
 
 const navItems = [
   { label: "Início", path: "/" },
@@ -14,6 +15,9 @@ const navItems = [
 ];
 
 const Navbar = () => {
+  const { data: categories } = useSupabaseContent();
+  const totalContentCount = categories?.reduce((acc, cat) => acc + cat.items.length, 0) || 0;
+  
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -62,10 +66,16 @@ const Navbar = () => {
       (items[index + 1] as HTMLElement)?.focus();
     } else if (e.key === "ArrowLeft") {
       (items[index - 1] as HTMLElement)?.focus();
-    } else if (e.key === "ArrowDown") {
-      // Pular para o primeiro card de conteúdo
-      const firstCard = document.querySelector('[tabindex="0"]') as HTMLElement;
-      firstCard?.focus();
+    } else    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      // Tentar focar no Hero primeiro, se não houver, vai para o primeiro card
+      const heroBtn = document.querySelector('.hero-action-btn') as HTMLElement;
+      if (heroBtn) {
+        heroBtn.focus();
+      } else {
+        const firstCard = document.querySelector('[tabindex="0"]:not(.nav-link-item)') as HTMLElement;
+        firstCard?.focus();
+      }
     }
   };
 
@@ -94,6 +104,14 @@ const Navbar = () => {
               Entretenimento e lazer
             </span>
           </Link>
+
+          {/* Centralized Content Counter */}
+          <div className="absolute left-1/2 -translate-x-1/2 top-1 sm:top-2 hidden sm:flex flex-col items-center pointer-events-none">
+            <span className="text-[10px] font-black text-[#00A8E1] uppercase tracking-[0.2em] opacity-80">
+              Temos {totalContentCount} conteúdos
+            </span>
+            <div className="h-[2px] w-12 bg-gradient-to-r from-transparent via-[#00A8E1]/50 to-transparent mt-1" />
+          </div>
 
           {/* Desktop Nav */}
           <ul className="hidden lg:flex items-center gap-6">

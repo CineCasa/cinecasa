@@ -17,6 +17,8 @@ import Search from "./pages/Search";
 import NotFound from "./pages/NotFound";
 import NetflixLoader from "./components/NetflixLoader";
 import Login from "./pages/Login";
+import Plans from "./pages/Plans";
+import Admin from "./pages/Admin";
 import { AuthProvider } from "./components/AuthProvider";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -30,7 +32,7 @@ const HomeRedirect = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const hasRedirected = sessionStorage.getItem("initialRedirect");
-    if (!hasRedirected && location.pathname !== "/" && location.pathname !== "/login") {
+    if (!hasRedirected && location.pathname !== "/" && location.pathname !== "/login" && location.pathname !== "/plans") {
        navigate("/", { replace: true });
        sessionStorage.setItem("initialRedirect", "true");
     }
@@ -53,6 +55,8 @@ const AppRoutes = () => {
       >
         <Routes location={location}>
           <Route path="/login" element={<Login />} />
+          <Route path="/plans" element={<ProtectedRoute><Plans /></ProtectedRoute>} />
+          <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
           <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
           <Route path="/cinema" element={<ProtectedRoute><Cinema /></ProtectedRoute>} />
           <Route path="/series" element={<ProtectedRoute><Series /></ProtectedRoute>} />

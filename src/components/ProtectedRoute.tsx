@@ -2,7 +2,7 @@ import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "./AuthProvider";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { session, loading } = useAuth();
+  const { session, loading, plan } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -14,8 +14,12 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (!session) {
-    // Redirect to login but save the current location they were trying to go to
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // Se o usuário não tem plano e não está na página de planos, redireciona
+  if (plan === "none" && location.pathname !== "/plans") {
+    return <Navigate to="/plans" replace />;
   }
 
   return <>{children}</>;
