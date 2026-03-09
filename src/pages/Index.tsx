@@ -60,6 +60,25 @@ const Index = () => {
   
   const isWeekendActive = isValidSabado();
 
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const active = document.activeElement;
+      const isNavKey = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key);
+      
+      if (isNavKey && (active === document.body || !active || active.tagName === "DIV")) {
+        // Nada importante focado, vamos focar no primeiro card ou link da nav
+        const firstFocusable = document.querySelector('.nav-link-item, [tabindex="0"]') as HTMLElement;
+        if (firstFocusable) {
+          e.preventDefault();
+          firstFocusable.focus();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />

@@ -103,8 +103,10 @@ const ContentCard = ({ item, index, isLast = false, showProgress = false }: Cont
 
     if (e.key === "ArrowRight") {
       e.preventDefault();
-      const next = containerRef.current?.nextElementSibling as HTMLElement;
-      if (next && next.tabIndex === 0) {
+      const allCards = Array.from(document.querySelectorAll('[tabindex="0"]'));
+      const currentIndex = allCards.indexOf(containerRef.current!);
+      const next = allCards[currentIndex + 1] as HTMLElement;
+      if (next && next.classList.contains('relative')) { // Verifica se ainda é um card ou similar
         next.focus();
         next.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
       }
@@ -112,18 +114,28 @@ const ContentCard = ({ item, index, isLast = false, showProgress = false }: Cont
 
     if (e.key === "ArrowLeft") {
       e.preventDefault();
-      const prev = containerRef.current?.previousElementSibling as HTMLElement;
-      if (prev && prev.tabIndex === 0) {
+      const allCards = Array.from(document.querySelectorAll('[tabindex="0"]'));
+      const currentIndex = allCards.indexOf(containerRef.current!);
+      const prev = allCards[currentIndex - 1] as HTMLElement;
+      if (prev) {
         prev.focus();
         prev.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+      } else {
+        // Se for o primeiro card, talvez queira ir para o menu lateral ou navbar
+        document.querySelector('.nav-link-item')?.focus();
       }
     }
 
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      // Encontrar a próxima fileira (ContentRow)
       const currentRow = containerRef.current?.closest(".row-wrapper");
-      const nextRow = currentRow?.nextElementSibling as HTMLElement;
+      let nextRow = currentRow?.nextElementSibling;
+      
+      // Pular elementos que não são linhas (como divisores ou spacers)
+      while (nextRow && !nextRow.querySelector('[tabindex="0"]')) {
+        nextRow = nextRow.nextElementSibling;
+      }
+
       const nextFocusable = nextRow?.querySelector('[tabindex="0"]') as HTMLElement;
       if (nextFocusable) {
         nextFocusable.focus();
@@ -133,9 +145,14 @@ const ContentCard = ({ item, index, isLast = false, showProgress = false }: Cont
 
     if (e.key === "ArrowUp") {
       e.preventDefault();
-      // Encontrar a fileira anterior
       const currentRow = containerRef.current?.closest(".row-wrapper");
-      const prevRow = currentRow?.previousElementSibling as HTMLElement;
+      let prevRow = currentRow?.previousElementSibling;
+
+       // Pular elementos que não são linhas
+       while (prevRow && !prevRow.querySelector('[tabindex="0"]')) {
+        prevRow = prevRow.previousElementSibling;
+      }
+
       const prevFocusable = prevRow?.querySelector('[tabindex="0"]') as HTMLElement;
       if (prevFocusable) {
         prevFocusable.focus();
@@ -143,7 +160,9 @@ const ContentCard = ({ item, index, isLast = false, showProgress = false }: Cont
       } else {
         // Se não houver linha acima, focar na Navbar
         const navLinks = document.querySelectorAll('.nav-link-item');
-        (navLinks[0] as HTMLElement)?.focus();
+        if (navLinks.length > 0) {
+          (navLinks[0] as HTMLElement).focus();
+        }
       }
     }
 
