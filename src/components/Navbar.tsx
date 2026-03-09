@@ -51,6 +51,11 @@ const Navbar = () => {
     }
   };
 
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/login");
+  };
+
   const handleNavKeyDown = (e: React.KeyboardEvent, index: number) => {
     const items = document.querySelectorAll('.nav-link-item');
     if (e.key === "ArrowRight") {

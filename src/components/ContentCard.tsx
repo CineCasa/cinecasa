@@ -100,6 +100,53 @@ const ContentCard = ({ item, index, isLast = false, showProgress = false }: Cont
         setIsPlayerOpen(true);
       }
     }
+
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      const next = containerRef.current?.nextElementSibling as HTMLElement;
+      if (next && next.tabIndex === 0) {
+        next.focus();
+        next.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+      }
+    }
+
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      const prev = containerRef.current?.previousElementSibling as HTMLElement;
+      if (prev && prev.tabIndex === 0) {
+        prev.focus();
+        prev.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+      }
+    }
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      // Encontrar a próxima fileira (ContentRow)
+      const currentRow = containerRef.current?.closest(".row-wrapper");
+      const nextRow = currentRow?.nextElementSibling as HTMLElement;
+      const nextFocusable = nextRow?.querySelector('[tabindex="0"]') as HTMLElement;
+      if (nextFocusable) {
+        nextFocusable.focus();
+        nextFocusable.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }
+
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      // Encontrar a fileira anterior
+      const currentRow = containerRef.current?.closest(".row-wrapper");
+      const prevRow = currentRow?.previousElementSibling as HTMLElement;
+      const prevFocusable = prevRow?.querySelector('[tabindex="0"]') as HTMLElement;
+      if (prevFocusable) {
+        prevFocusable.focus();
+        prevFocusable.scrollIntoView({ behavior: "smooth", block: "center" });
+      } else {
+        // Se não houver linha acima, focar na Navbar
+        const navLinks = document.querySelectorAll('.nav-link-item');
+        (navLinks[0] as HTMLElement)?.focus();
+      }
+    }
+
     if (e.key === "Escape") {
       setIsHovered(false);
     }
