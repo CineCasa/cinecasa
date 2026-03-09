@@ -36,6 +36,8 @@ const HomeRedirect = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+import Login from "./pages/Login";
+
 const AppRoutes = () => {
   const location = useLocation();
   
@@ -50,6 +52,7 @@ const AppRoutes = () => {
       >
         <Routes location={location}>
           <Route path="/" element={<Index />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/cinema" element={<Cinema />} />
           <Route path="/series" element={<Series />} />
           <Route path="/tv-live" element={<TvAoVivo />} />
