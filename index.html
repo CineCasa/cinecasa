@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <script type="text/javascript">
+      // Restaurar rota do SPA após redirecionamento do 404.html
+      (function(l) {
+        if (l.search[1] === '/' ) {
+          var decoded = l.search.slice(1).split('&').map(function(s) { 
+            return s.replace(/~and~/g, '&') 
+          }).join('?');
+          window.history.replaceState(null, null,
+              l.pathname.slice(0, -1) + decoded + l.hash
+          );
+        }
+      }(window.location))
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Cinecasa - Entretenimento e lazer</title>
+    <meta name="description" content="Entretenimento e lazer">
+    <meta name="theme-color" content="#000000">
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Cinecasa - Entretenimento e lazer">
+    <meta property="og:description" content="O melhor do entretenimento na palma da sua mão">
+    <script type="module" crossorigin src="/assets/index-gqZcU76U.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-CdM_2QCM.css">
+  </head>
+
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
