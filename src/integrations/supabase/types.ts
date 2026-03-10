@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      atualizar: {
+        Row: {
+          created_at: string
+          id: number
+          numero: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          numero?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          numero?: number | null
+        }
+        Relationships: []
+      }
       cinema: {
         Row: {
           category: string | null
@@ -95,6 +113,33 @@ export type Database = {
           type?: string | null
           url?: string | null
           year?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          email: string
+          id: string
+          is_active: boolean | null
+          is_admin: boolean | null
+          plan: string | null
+          updated_at: string
+        }
+        Insert: {
+          email: string
+          id: string
+          is_active?: boolean | null
+          is_admin?: boolean | null
+          plan?: string | null
+          updated_at?: string
+        }
+        Update: {
+          email?: string
+          id?: string
+          is_active?: boolean | null
+          is_admin?: boolean | null
+          plan?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
