@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -10,6 +10,8 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const selectedPlan = (location.state as any)?.selectedPlan;
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,20 +19,43 @@ const Login = () => {
 
     try {
       if (isRegistering) {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-        });
+        const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
+
+        // If a plan was selected before registration, save it
+        if (selectedPlan && data.user) {
+          await (supabase as any)
+            .from("profiles")
+            .upsert({
+              id: data.user.id,
+              email: data.user.email,
+              plan: selectedPlan,
+              is_active: false,
+              updated_at: new Date().toISOString(),
+            });
+        }
+
         toast.success("Conta criada! Verifique seu email para confirmar.");
         setIsRegistering(false);
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        toast.success("Bem-vindo de volta!");
+
+        // If a plan was selected before login, save it
+        if (selectedPlan && data.user) {
+          await (supabase as any)
+            .from("profiles")
+            .upsert({
+              id: data.user.id,
+              email: data.user.email,
+              plan: selectedPlan,
+              is_active: false,
+              updated_at: new Date().toISOString(),
+            });
+          toast.success(`Plano ${selectedPlan.toUpperCase()} selecionado! Aguarde ativação.`);
+        } else {
+          toast.success("Bem-vindo de volta!");
+        }
         navigate("/");
       }
     } catch (error: any) {
@@ -41,24 +66,22 @@ const Login = () => {
   };
 
   return (
-    <div className="relative min-h-screen w-full flex items-center justify-center bg-black overflow-hidden font-sans">
-      {/* Background Image with Overlay */}
+    <div className="relative min-h-screen w-full flex items-center justify-center bg-background overflow-hidden font-sans">
       <div className="absolute inset-0 z-0">
         <img
           src="https://images.unsplash.com/photo-1574267432553-4b4628081c31?q=80&w=2000&auto=format&fit=crop"
           className="w-full h-full object-cover opacity-30"
           alt="background"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
       </div>
 
-      {/* Top Bar / Logo */}
       <div className="absolute top-0 left-0 w-full p-8 z-20 flex justify-between items-center">
-        <Link to="/" className="flex flex-col items-start leading-none group">
-          <span className="text-3xl sm:text-4xl font-[900] tracking-tighter text-[#00A8E1] italic">
+        <Link to="/plans" className="flex flex-col items-start leading-none group">
+          <span className="text-3xl sm:text-4xl font-[900] tracking-tighter text-primary italic">
             CINECASA
           </span>
-          <span className="text-[10px] font-bold text-white/50 tracking-[0.3em] uppercase">
+          <span className="text-[10px] font-bold text-muted-foreground tracking-[0.3em] uppercase">
             Entretenimento e lazer
           </span>
         </Link>
@@ -68,9 +91,16 @@ const Login = () => {
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
-        className="relative z-10 w-full max-w-[450px] p-8 sm:px-16 sm:py-12 bg-black/80 rounded-lg border border-white/10 backdrop-blur-xl shadow-2xl gpu-accelerated"
+        className="relative z-10 w-full max-w-[450px] p-8 sm:px-16 sm:py-12 bg-card/80 rounded-lg border border-border backdrop-blur-xl shadow-2xl"
       >
-        <h1 className="text-3xl font-bold text-white mb-8">
+        {selectedPlan && (
+          <div className="mb-6 bg-primary/10 border border-primary/30 rounded-lg p-3 text-center">
+            <p className="text-xs text-muted-foreground">Plano selecionado</p>
+            <p className="text-sm font-black text-primary italic">{selectedPlan.toUpperCase()}</p>
+          </div>
+        )}
+
+        <h1 className="text-3xl font-bold text-foreground mb-8">
           {isRegistering ? "Criar Conta" : "Entrar"}
         </h1>
 
@@ -83,10 +113,10 @@ const Login = () => {
               required
               autoFocus
               tabIndex={1}
-              className="w-full bg-[#333] text-white rounded px-4 pt-6 pb-2 outline-none focus:bg-[#454545] transition-colors peer border-b-2 border-transparent focus:border-[#00A8E1] focus-visible:ring-0"
+              className="w-full bg-secondary text-foreground rounded px-4 pt-6 pb-2 outline-none focus:bg-muted transition-colors peer border-b-2 border-transparent focus:border-primary focus-visible:ring-0"
               placeholder=" "
             />
-            <label className="absolute left-4 top-4 text-[#8c8c8c] text-sm transition-all peer-placeholder-shown:text-base peer-placeholder-shown:top-4 peer-focus:top-1 peer-focus:text-xs pointer-events-none">
+            <label className="absolute left-4 top-4 text-muted-foreground text-sm transition-all peer-placeholder-shown:text-base peer-placeholder-shown:top-4 peer-focus:top-1 peer-focus:text-xs pointer-events-none">
               Email
             </label>
           </div>
@@ -98,10 +128,10 @@ const Login = () => {
               onChange={(e) => setPassword(e.target.value)}
               required
               tabIndex={2}
-              className="w-full bg-[#333] text-white rounded px-4 pt-6 pb-2 outline-none focus:bg-[#454545] transition-colors peer border-b-2 border-transparent focus:border-[#00A8E1] focus-visible:ring-0"
+              className="w-full bg-secondary text-foreground rounded px-4 pt-6 pb-2 outline-none focus:bg-muted transition-colors peer border-b-2 border-transparent focus:border-primary focus-visible:ring-0"
               placeholder=" "
             />
-            <label className="absolute left-4 top-4 text-[#8c8c8c] text-sm transition-all peer-placeholder-shown:text-base peer-placeholder-shown:top-4 peer-focus:top-1 peer-focus:text-xs pointer-events-none">
+            <label className="absolute left-4 top-4 text-muted-foreground text-sm transition-all peer-placeholder-shown:text-base peer-placeholder-shown:top-4 peer-focus:top-1 peer-focus:text-xs pointer-events-none">
               Senha
             </label>
           </div>
@@ -110,10 +140,10 @@ const Login = () => {
             type="submit"
             disabled={isLoading}
             tabIndex={3}
-            className="w-full bg-[#00A8E1] text-white font-bold py-3 mt-4 rounded transition-all hover:bg-[#00A8E1]/80 active:scale-[0.98] shadow-[0_0_20px_rgba(0,168,225,0.3)] disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-white"
+            className="w-full bg-primary text-primary-foreground font-bold py-3 mt-4 rounded transition-all hover:bg-primary/80 active:scale-[0.98] shadow-[0_0_20px_hsl(var(--primary)/0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? (
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
+              <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mx-auto" />
             ) : (
               isRegistering ? "Cadastrar" : "Entrar"
             )}
@@ -122,27 +152,27 @@ const Login = () => {
           {!isRegistering && (
             <div className="flex items-center justify-between mt-2">
               <div className="flex items-center gap-2">
-                <input type="checkbox" className="w-4 h-4 rounded accent-[#00A8E1]" id="remember" />
-                <label htmlFor="remember" className="text-xs text-[#b3b3b3] cursor-pointer">Lembre-se de mim</label>
+                <input type="checkbox" className="w-4 h-4 rounded accent-primary" id="remember" />
+                <label htmlFor="remember" className="text-xs text-muted-foreground cursor-pointer">Lembre-se de mim</label>
               </div>
-              <Link to="#" className="text-xs text-[#b3b3b3] hover:underline">Esqueceu a senha?</Link>
             </div>
           )}
         </form>
 
-        <div className="mt-12 text-[#737373]">
+        <div className="mt-12 text-muted-foreground">
           <p>
             {isRegistering ? "Já tem uma conta?" : "Novo por aqui?"}{" "}
-            <button 
+            <button
               onClick={() => setIsRegistering(!isRegistering)}
-              className="text-white hover:underline font-medium"
+              className="text-foreground hover:underline font-medium"
             >
-              {isRegistering ? "Entrar agora." : "Assine agora."}
+              {isRegistering ? "Entrar agora." : "Crie sua conta."}
             </button>
           </p>
-          <p className="text-[11px] mt-4 leading-relaxed">
-            Esta página é protegida pelo Google reCAPTCHA para garantir que você não é um robô.{" "}
-            <button className="text-[#0071eb] hover:underline">Saiba mais.</button>
+          <p className="mt-3">
+            <Link to="/plans" className="text-primary hover:underline text-sm font-semibold">
+              ← Ver planos disponíveis
+            </Link>
           </p>
         </div>
       </motion.div>
