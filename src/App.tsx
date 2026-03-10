@@ -55,7 +55,7 @@ const AppRoutes = () => {
       >
         <Routes location={location}>
           <Route path="/login" element={<Login />} />
-          <Route path="/plans" element={<ProtectedRoute><Plans /></ProtectedRoute>} />
+          <Route path="/plans" element={<Plans />} />
           <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
           <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
           <Route path="/cinema" element={<ProtectedRoute><Cinema /></ProtectedRoute>} />
