@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/AuthProvider";
 import { toast } from "sonner";
 
 const Login = () => {
@@ -11,7 +12,15 @@ const Login = () => {
   const [isRegistering, setIsRegistering] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { session, profile } = useAuth();
   const selectedPlan = (location.state as any)?.selectedPlan;
+
+  // Redirect if already logged in and active
+  useEffect(() => {
+    if (session && profile?.is_active) {
+      navigate("/", { replace: true });
+    }
+  }, [session, profile, navigate]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +31,6 @@ const Login = () => {
         const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
 
-        // If a plan was selected before registration, save it
         if (selectedPlan && data.user) {
           await (supabase as any)
             .from("profiles")
@@ -35,13 +43,12 @@ const Login = () => {
             });
         }
 
-        toast.success("Conta criada! Verifique seu email para confirmar.");
+        toast.success("Conta criada! Aguarde a ativação pelo administrador.");
         setIsRegistering(false);
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
 
-        // If a plan was selected before login, save it
         if (selectedPlan && data.user) {
           await (supabase as any)
             .from("profiles")
