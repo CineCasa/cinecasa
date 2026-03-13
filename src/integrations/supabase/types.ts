@@ -116,6 +116,69 @@ export type Database = {
         }
         Relationships: []
       }
+      home_sections: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          id: string
+          nome: string
+          ordem: number
+          query: string | null
+          tipo: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          id?: string
+          nome: string
+          ordem?: number
+          query?: string | null
+          tipo?: string
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          id?: string
+          nome?: string
+          ordem?: number
+          query?: string | null
+          tipo?: string
+        }
+        Relationships: []
+      }
+      planos: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          id: string
+          nome: string
+          popular: boolean | null
+          preco: number
+          recursos: Json
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          id?: string
+          nome: string
+          popular?: boolean | null
+          preco: number
+          recursos: Json
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          id?: string
+          nome?: string
+          popular?: boolean | null
+          preco?: number
+          recursos?: Json
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           email: string
@@ -239,12 +302,177 @@ export type Database = {
         }
         Relationships: []
       }
+      user_activation_log: {
+        Row: {
+          action: string
+          activated_by: string | null
+          created_at: string | null
+          id: string
+          plan: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          activated_by?: string | null
+          created_at?: string | null
+          id?: string
+          plan?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          activated_by?: string | null
+          created_at?: string | null
+          id?: string
+          plan?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_activation_log_activated_by_fkey"
+            columns: ["activated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_activation_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      usuario_plano: {
+        Row: {
+          created_at: string | null
+          data_fim: string | null
+          data_inicio: string
+          id: string
+          metodo_pagamento: string | null
+          plano_id: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+          valor_pago: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          data_fim?: string | null
+          data_inicio: string
+          id?: string
+          metodo_pagamento?: string | null
+          plano_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          valor_pago?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          data_fim?: string | null
+          data_inicio?: string
+          id?: string
+          metodo_pagamento?: string | null
+          plano_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          valor_pago?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usuario_plano_plano_id_fkey"
+            columns: ["plano_id"]
+            isOneToOne: false
+            referencedRelation: "planos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "usuario_plano_plano_id_fkey"
+            columns: ["plano_id"]
+            isOneToOne: false
+            referencedRelation: "planos_ativos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
-      [_ in never]: never
+      planos_ativos: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          nome: string | null
+          popular: boolean | null
+          preco: number | null
+          recursos: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string | null
+          nome?: string | null
+          popular?: boolean | null
+          preco?: number | null
+          recursos?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string | null
+          nome?: string | null
+          popular?: boolean | null
+          preco?: number | null
+          recursos?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      usuarios_planos_ativos: {
+        Row: {
+          created_at: string | null
+          data_fim: string | null
+          data_inicio: string | null
+          id: string | null
+          metodo_pagamento: string | null
+          plano_id: string | null
+          plano_nome: string | null
+          plano_preco: number | null
+          status: string | null
+          user_id: string | null
+          valor_pago: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usuario_plano_plano_id_fkey"
+            columns: ["plano_id"]
+            isOneToOne: false
+            referencedRelation: "planos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "usuario_plano_plano_id_fkey"
+            columns: ["plano_id"]
+            isOneToOne: false
+            referencedRelation: "planos_ativos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
-      [_ in never]: never
+      activate_user: {
+        Args: { plan?: string; user_id: string }
+        Returns: boolean
+      }
+      calcular_data_fim: {
+        Args: { data_inicio: string; meses: number }
+        Returns: string
+      }
+      deactivate_user: { Args: { user_id: string }; Returns: boolean }
+      plano_ativo: { Args: { user_id_param: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never

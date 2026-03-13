@@ -1,84 +1,86 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import Navbar from "@/components/Navbar";
 import HeroBanner from "@/components/HeroBanner";
 import ContentRow from "@/components/ContentRow";
 import Footer from "@/components/Footer";
 import { useSupabaseContent } from "@/hooks/useSupabaseContent";
-import { useAiRecommendations } from "@/hooks/useAiRecommendations";
-import AiRecommendationsRow from "@/components/AiRecommendationsRow";
 import ContinueWatchingRow from "@/components/ContinueWatchingRow";
 import DynamicCategoryRow from "@/components/DynamicCategoryRow";
 import TrendingGlobalRow from "@/components/TrendingGlobalRow";
-import Top5StreamingRow from "@/components/Top5StreamingRow";
+import { useHomeSections } from "@/hooks/useHomeSections";
+import { ContentItem } from "@/data/content";
 
-// Helper for 'Sábado à noite merece'
-// Active from Saturday 16:49 to Sunday 12:59
-const isValidSabado = () => {
-  const now = new Date();
-  const day = now.getDay(); // 0 is Sunday, 6 is Saturday
-  const hours = now.getHours();
-  const minutes = now.getMinutes();
-
-  if (day === 6) { // Saturday
-    if (hours > 16 || (hours === 16 && minutes >= 49)) return true;
+// Shuffle deterministically per session (changes on page reload)
+const sessionSeed = Date.now();
+const shuffleArray = (array: any[]) => {
+  const newArr = [...array];
+  let seed = sessionSeed;
+  for (let i = newArr.length - 1; i > 0; i--) {
+    seed = (seed * 9301 + 49297) % 233280;
+    const j = Math.floor((seed / 233280) * (i + 1));
+    [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
   }
-  if (day === 0) { // Sunday
-    if (hours < 12 || (hours === 12 && minutes <= 59)) return true;
-  }
-  return false;
+  return newArr;
 };
 
 const Index = () => {
   const { data: categories, isLoading } = useSupabaseContent();
-  const { recommendations } = useAiRecommendations();
-  
-  // 1. Filtragem Inicial: Remover TV e Canais
-  const filteredCategories = categories?.filter(cat => 
-    !cat.title.toLowerCase().includes("tv") && 
-    !cat.title.toLowerCase().includes("canais") &&
-    cat.id !== "tv-ao-vivo"
-  ) || [];
+  const { data: homeSections } = useHomeSections();
 
-  // 2. Unicidade de Conteúdo e Remoção de Temporadas
-  // Rastreamos o que já foi exibido para evitar duplicatas e múltiplas temporadas
-  const displayedIds = new Set<string>();
+  // All items (excluding TV) for filtering
+  const allItems = useMemo(() => {
+    if (!categories) return [];
+    return categories
+      .filter(cat => cat.id !== "tv-live" && !cat.title.toLowerCase().includes("tv"))
+      .flatMap(c => c.items);
+  }, [categories]);
 
-  const getUniqueItems = (items: any[]) => {
-    return items.filter(item => {
-      // Usamos tmdbId se disponível, senão o título normalizado para detectar temporadas/duplicatas
-      const uniqueId = item.tmdbId || item.title.toLowerCase().replace(/temporada\s+\d+/g, "").trim();
-      
-      if (displayedIds.has(uniqueId) || item.type === "tv") {
-        return false;
-      }
-      displayedIds.add(uniqueId);
+  // Deduplicated items
+  const uniqueItems = useMemo(() => {
+    const seen = new Set<string>();
+    return allItems.filter(item => {
+      const key = item.title.toLowerCase().replace(/temporada\s+\d+/g, "").trim();
+      if (seen.has(key)) return false;
+      seen.add(key);
       return true;
     });
-  };
+  }, [allItems]);
 
-  // Flatten items for Dynamic Categories (já filtrados por unicidade)
-  const allItems = filteredCategories.flatMap(c => c.items);
-  
-  const isWeekendActive = isValidSabado();
+  // Get user's most-watched genres for "Exclusivos para Você"
+  const userGenres = useMemo(() => {
+    try {
+      const hist = JSON.parse(localStorage.getItem("paixaohist") || "[]");
+      const genreCount: Record<string, number> = {};
+      hist.forEach((h: any) => {
+        (h.genre || []).forEach((g: string) => {
+          genreCount[g.toLowerCase()] = (genreCount[g.toLowerCase()] || 0) + 1;
+        });
+      });
+      return Object.entries(genreCount).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([g]) => g);
+    } catch { return []; }
+  }, []);
+
+  // Dynamic categories from Supabase (remaining ones not in fixed sections)
+  const dynamicCategories = useMemo(() => {
+    if (!categories) return [];
+    const fixedIds = new Set(["tv-live"]);
+    return categories.filter(cat => !fixedIds.has(cat.id));
+  }, [categories]);
 
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       const active = document.activeElement;
       const isNavKey = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key);
-      
       if (isNavKey && (active === document.body || !active || active.tagName === "DIV")) {
-        // Nada importante focado, vamos focar no primeiro card ou link da nav
         const firstFocusable = document.querySelector('.nav-link-item, [tabindex="0"]') as HTMLElement;
-        if (firstFocusable) {
-          e.preventDefault();
-          firstFocusable.focus();
-        }
+        if (firstFocusable) { e.preventDefault(); firstFocusable.focus(); }
       }
     };
-
     window.addEventListener("keydown", handleGlobalKeyDown);
     return () => window.removeEventListener("keydown", handleGlobalKeyDown);
   }, []);
+
+  const pick5 = (items: ContentItem[]) => shuffleArray(items).slice(0, 5);
 
   return (
     <div className="min-h-screen bg-background">
@@ -86,74 +88,111 @@ const Index = () => {
       <main className="pb-20">
         <HeroBanner />
         <div className="relative z-10 pt-12 -mt-10 flex flex-col gap-4">
+          {/* 1. Continuar Assistindo */}
           <ContinueWatchingRow />
 
-          {/* Lançamentos & Novidades (2025/2026) */}
-          <DynamicCategoryRow 
-            title="Lançamentos & Novidades" 
-            items={getUniqueItems(allItems)} 
-            filterFn={(item) => Number(item.year) >= 2025} 
+          {/* 2. Lançamentos & Novidades */}
+          <DynamicCategoryRow
+            title="Lançamentos & Novidades"
+            items={uniqueItems}
+            filterFn={(item) => {
+              const cats = item.genre.map(g => g.toLowerCase());
+              return cats.some(c => c.includes("lançamento")) || Number(item.year) >= 2025;
+            }}
+            limit={5}
           />
 
-          {/* Sábado à noite merece (Conditional) */}
-          {isWeekendActive && (
-             <DynamicCategoryRow 
-               title="Sábado à noite merece" 
-               items={getUniqueItems(allItems)} 
-               filterFn={(item) => {
-                 const g = item.genre.map(x => x.toLowerCase());
-                 return g.includes("comédia") || g.includes("religioso") || g.includes("suspense") || g.includes("ação") || g.includes("action");
-               }} 
-               limit={5}
-             />
+          {/* 3. Exclusivos para Você */}
+          {userGenres.length > 0 && (
+            <DynamicCategoryRow
+              title="Exclusivos para Você"
+              items={uniqueItems}
+              filterFn={(item) => item.genre.some(g => userGenres.includes(g.toLowerCase()))}
+              limit={5}
+            />
           )}
 
-          {/* Séries em Alta (Filtrando TV global se for canal) */}
-          <TrendingGlobalRow title="Séries em Alta" type="tv" />
-
-          {/* Indicações IA */}
-          {recommendations && recommendations.length > 0 && (
-            <div className="relative">
-              <h2 className="absolute top-0 opacity-0 pointer-events-none">Indicações exclusivas para você</h2>
-              <AiRecommendationsRow items={getUniqueItems(recommendations).slice(0, 5)} />
-            </div>
-          )}
-
-          <DynamicCategoryRow 
-            title="Negritude em Destaque" 
-            items={getUniqueItems(allItems)} 
-            filterFn={(item) => item.genre.some(g => g.toLowerCase().includes("negritude"))} 
+          {/* 4. Dinheiro Importa! */}
+          <DynamicCategoryRow
+            title="Dinheiro Importa!"
+            items={uniqueItems}
+            filterFn={(item) => {
+              const cats = item.genre.map(g => g.toLowerCase()).join(" ");
+              const title = item.title.toLowerCase();
+              const desc = (item.description || "").toLowerCase();
+              const keywords = ["finança", "dinheiro", "financ", "money", "investimento", "economia", "business", "wall street"];
+              return keywords.some(k => cats.includes(k) || title.includes(k) || desc.includes(k));
+            }}
+            limit={5}
           />
 
-          <TrendingGlobalRow title="Indicados ao Oscar 25/26" type="movie" />
-
-          <DynamicCategoryRow 
-            title="Cinema Nacional" 
-            items={getUniqueItems(allItems)} 
-            filterFn={(item) => item.genre.some(g => g.toLowerCase().includes("nacional"))} 
+          {/* 5. Negritude em Alta */}
+          <DynamicCategoryRow
+            title="Negritude em Alta"
+            items={uniqueItems}
+            filterFn={(item) => item.genre.some(g => g.toLowerCase().includes("negritude"))}
+            limit={5}
           />
 
-          <DynamicCategoryRow 
-            title="Animações para a Família" 
-            items={getUniqueItems(allItems)} 
-            filterFn={(item) => item.genre.some(g => g.toLowerCase().includes("animação") || g.toLowerCase().includes("animation"))} 
+          {/* 6. Romances para se Inspirar */}
+          <DynamicCategoryRow
+            title="Romances para se Inspirar"
+            items={uniqueItems}
+            filterFn={(item) => item.genre.some(g => g.toLowerCase().includes("romance") || g.toLowerCase().includes("romântico"))}
+            limit={5}
           />
 
-          <DynamicCategoryRow 
-            title="Romances para se inspirar" 
-            items={getUniqueItems(allItems)} 
-            filterFn={(item) => item.genre.some(g => g.toLowerCase().includes("romance"))} 
+          {/* 7. Prepare a Pipoca - Séries em Alta */}
+          <TrendingGlobalRow title="Prepare a Pipoca" type="tv" />
+
+          {/* 8. Como é bom ser criança */}
+          <DynamicCategoryRow
+            title="Como é bom ser criança"
+            items={uniqueItems}
+            filterFn={(item) => {
+              const cats = item.genre.map(g => g.toLowerCase());
+              return cats.some(c => c.includes("infantil") || c.includes("kids") || c.includes("animação") || c.includes("animation"));
+            }}
+            limit={5}
           />
 
-          <Top5StreamingRow title="Top 5 Netflix" providerId={8} />
-          <Top5StreamingRow title="Top 5 Prime Vídeo" providerId={119} />
-          <Top5StreamingRow title="Top 5 Globoplay" providerId={307} />
-          <Top5StreamingRow title="Top 5 Disney+" providerId={337} />
-          <Top5StreamingRow title="Top 5 Max" providerId={384} />
-          <Top5StreamingRow title="Top 5 Paramount+" providerId={531} />
+          {/* 9. Vencedores de Oscar */}
+          <TrendingGlobalRow title="Vencedores de Oscar" type="movie" />
+
+          {/* 10. Travesseiro e Edredon */}
+          <DynamicCategoryRow
+            title="Travesseiro e Edredon"
+            items={uniqueItems}
+            filterFn={(item) => {
+              const cats = item.genre.map(g => g.toLowerCase());
+              return cats.some(c => c.includes("família") || c.includes("family") || c.includes("romance") || c.includes("comédia") || c.includes("comedy") || c.includes("religioso"));
+            }}
+            limit={5}
+          />
+
+          {/* 11. Seções dinâmicas do Supabase (home_sections) */}
+          {homeSections && homeSections.map((section) => (
+            <DynamicCategoryRow
+              key={section.id}
+              title={section.nome}
+              items={uniqueItems}
+              filterFn={(item) => {
+                if (section.tipo === "categoria" && section.query) {
+                  return item.genre.some(g => g.toLowerCase().includes(section.query!.toLowerCase()));
+                }
+                return false;
+              }}
+              limit={5}
+            />
+          ))}
+
+          {/* All remaining Supabase categories */}
+          {dynamicCategories.map((cat) => (
+            <ContentRow key={cat.id} category={{ ...cat, items: cat.items.slice(0, 20) }} />
+          ))}
 
           {isLoading && (
-            <div className="flex justify-center p-10 text-white/50">Carregando catálogo completo...</div>
+            <div className="flex justify-center p-10 text-muted-foreground">Carregando catálogo completo...</div>
           )}
         </div>
       </main>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, Shield, Zap, Star, Copy, X } from "lucide-react";
@@ -10,9 +10,16 @@ const PIX_KEY = "6c4d357b-9ec7-4900-84cf-a221f4d990d9";
 
 const Plans = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile, session } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [pixModal, setPixModal] = useState<{ plan: string; price: string } | null>(null);
+
+  // If user is already active, redirect to home
+  useEffect(() => {
+    if (session && profile?.is_active && profile?.plan && profile.plan !== "none") {
+      navigate("/", { replace: true });
+    }
+  }, [session, profile, navigate]);
 
   const handleSelectPlan = (plan: string, price: string) => {
     setPixModal({ plan, price });
@@ -27,7 +34,6 @@ const Plans = () => {
     if (!pixModal) return;
 
     if (!user) {
-      // Save selected plan in state and redirect to login
       navigate("/login", { state: { selectedPlan: pixModal.plan } });
       return;
     }
@@ -58,14 +64,12 @@ const Plans = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans py-20 px-4 overflow-hidden relative">
-      {/* Background decoration */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
         <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-primary/10 blur-[120px] rounded-full" />
         <div className="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-primary/10 blur-[120px] rounded-full" />
       </div>
 
       <div className="max-w-6xl mx-auto relative z-10">
-        {/* Logo */}
         <div className="text-center mb-6">
           <span className="text-3xl sm:text-4xl font-[900] tracking-tighter text-primary italic">CINECASA</span>
           <p className="text-[10px] font-bold text-muted-foreground tracking-[0.3em] uppercase">Entretenimento e lazer</p>
@@ -164,11 +168,20 @@ const Plans = () => {
           </motion.div>
         </div>
 
-        <div className="mt-12 text-center">
+        <div className="mt-12 text-center space-y-3">
           <p className="text-muted-foreground text-sm flex items-center justify-center gap-2">
             <Shield size={16} /> Pagamento 100% seguro via Pix.
           </p>
-          <p className="text-muted-foreground/60 text-xs mt-2">
+          
+          {/* Já tenho plano button */}
+          <button
+            onClick={() => navigate("/login")}
+            className="px-8 py-3 bg-muted border border-border rounded-xl font-bold text-foreground hover:bg-muted/80 transition-all active:scale-95"
+          >
+            Já tenho plano
+          </button>
+
+          <p className="text-muted-foreground/60 text-xs">
             Já tem uma conta?{" "}
             <button onClick={() => navigate("/login")} className="text-primary hover:underline font-semibold">
               Faça login aqui
