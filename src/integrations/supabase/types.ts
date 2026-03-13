@@ -116,6 +116,36 @@ export type Database = {
         }
         Relationships: []
       }
+      home_sections: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          id: string
+          nome: string
+          ordem: number
+          query: string | null
+          tipo: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          id?: string
+          nome: string
+          ordem?: number
+          query?: string | null
+          tipo?: string
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          id?: string
+          nome?: string
+          ordem?: number
+          query?: string | null
+          tipo?: string
+        }
+        Relationships: []
+      }
       planos: {
         Row: {
           ativo: boolean | null
