@@ -8,18 +8,27 @@ import { toast } from "sonner";
 
 const PIX_KEY = "6c4d357b-9ec7-4900-84cf-a221f4d990d9";
 
+const FeatureItem = ({ text, highlight = false }: { text: string; highlight?: boolean }) => (
+  <div className="flex items-center gap-3">
+    <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${highlight ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
+      <Check size={14} />
+    </div>
+    <span className={`text-sm font-semibold ${highlight ? "text-foreground" : "text-muted-foreground"}`}>{text}</span>
+  </div>
+);
+
 const Plans = () => {
   const navigate = useNavigate();
-  const { user, profile, session } = useAuth();
+  const { user, profile, session, loading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [pixModal, setPixModal] = useState<{ plan: string; price: string } | null>(null);
 
-  // If user is already active, redirect to home
+  // If user is already active with a plan, redirect to home
   useEffect(() => {
-    if (session && profile?.is_active && profile?.plan && profile.plan !== "none") {
+    if (!loading && session && profile?.is_active && profile?.plan && profile.plan !== "none") {
       navigate("/", { replace: true });
     }
-  }, [session, profile, navigate]);
+  }, [loading, session, profile, navigate]);
 
   const handleSelectPlan = (plan: string, price: string) => {
     setPixModal({ plan, price });
@@ -33,6 +42,7 @@ const Plans = () => {
   const handleConfirmPayment = async () => {
     if (!pixModal) return;
 
+    // If not logged in, redirect to login with selected plan
     if (!user) {
       navigate("/login", { state: { selectedPlan: pixModal.plan } });
       return;
@@ -54,7 +64,8 @@ const Plans = () => {
 
       toast.success(`Plano ${pixModal.plan.toUpperCase()} selecionado! Aguarde a ativação pelo administrador.`);
       setPixModal(null);
-      navigate("/");
+      // Reload to show waiting screen
+      window.location.reload();
     } catch (error: any) {
       toast.error(error.message || "Erro ao selecionar plano.");
     } finally {
@@ -85,7 +96,7 @@ const Plans = () => {
             <h1 className="text-4xl sm:text-6xl font-[900] tracking-tighter italic text-foreground">ESCOLHA SEU PLANO</h1>
           </motion.div>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto leading-relaxed">
-            Seja bem-vindo ao melhor do entretenimento. Escolha o plano que melhor se adapta a você e comece sua jornada agora mesmo.
+            Seja bem-vindo ao melhor do entretenimento. Escolha o plano que melhor se adapta a você.
           </p>
         </div>
 
@@ -104,12 +115,10 @@ const Plans = () => {
               <h3 className="text-2xl font-black mb-1 italic text-foreground">PLANO BÁSICO</h3>
               <p className="text-muted-foreground text-sm">O essencial para sua diversão diária.</p>
             </div>
-
             <div className="mb-6">
               <span className="text-4xl font-[900] text-foreground">R$ 6,99</span>
               <span className="text-muted-foreground text-sm"> /mês</span>
             </div>
-
             <div className="space-y-4 mb-10 flex-grow">
               <FeatureItem text="Filmes selecionados (Até 2024)" />
               <FeatureItem text="Séries selecionadas (Até 2023)" />
@@ -117,7 +126,6 @@ const Plans = () => {
               <FeatureItem text="Séries Kids" />
               <FeatureItem text="Qualidade HD" />
             </div>
-
             <button
               onClick={() => handleSelectPlan("basic", "R$ 6,99")}
               className="w-full py-4 bg-muted border border-border rounded-xl font-black italic hover:bg-muted/80 text-foreground transition-all active:scale-95"
@@ -136,7 +144,6 @@ const Plans = () => {
             <div className="absolute top-4 right-4 bg-primary text-primary-foreground text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
               Recomendado
             </div>
-
             <div className="mb-6">
               <div className="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <Star className="text-primary" size={28} />
@@ -144,12 +151,10 @@ const Plans = () => {
               <h3 className="text-2xl font-black mb-1 italic text-foreground">PLANO PRO</h3>
               <p className="text-muted-foreground text-sm">Acesso total sem limites ou restrições.</p>
             </div>
-
             <div className="mb-6">
               <span className="text-4xl font-[900] text-foreground">R$ 9,99</span>
               <span className="text-muted-foreground text-sm"> /mês</span>
             </div>
-
             <div className="space-y-4 mb-10 flex-grow">
               <FeatureItem text="Todos os Conteúdos Liberados" highlight />
               <FeatureItem text="Lançamentos 2025 e 2026" highlight />
@@ -158,7 +163,6 @@ const Plans = () => {
               <FeatureItem text="Suporte Prioritário" highlight />
               <FeatureItem text="Qualidade máxima de imagem" highlight />
             </div>
-
             <button
               onClick={() => handleSelectPlan("pro", "R$ 9,99")}
               className="w-full py-4 bg-primary text-primary-foreground rounded-xl font-black italic hover:bg-primary/80 transition-all active:scale-95 shadow-[0_10px_20px_hsl(var(--primary)/0.3)]"
@@ -172,15 +176,12 @@ const Plans = () => {
           <p className="text-muted-foreground text-sm flex items-center justify-center gap-2">
             <Shield size={16} /> Pagamento 100% seguro via Pix.
           </p>
-          
-          {/* Já tenho plano button */}
           <button
             onClick={() => navigate("/login")}
             className="px-8 py-3 bg-muted border border-border rounded-xl font-bold text-foreground hover:bg-muted/80 transition-all active:scale-95"
           >
             Já tenho plano
           </button>
-
           <p className="text-muted-foreground/60 text-xs">
             Já tem uma conta?{" "}
             <button onClick={() => navigate("/login")} className="text-primary hover:underline font-semibold">
@@ -213,13 +214,11 @@ const Plans = () => {
                   <X size={20} />
                 </button>
               </div>
-
               <div className="bg-muted rounded-xl p-4 mb-6 text-center">
                 <p className="text-sm text-muted-foreground mb-1">Plano selecionado</p>
                 <p className="text-2xl font-black text-primary italic">{pixModal.plan.toUpperCase()}</p>
                 <p className="text-3xl font-[900] text-foreground mt-2">{pixModal.price}<span className="text-sm text-muted-foreground">/mês</span></p>
               </div>
-
               <div className="mb-6">
                 <p className="text-sm text-muted-foreground mb-3">Copie a chave Pix abaixo e realize o pagamento:</p>
                 <div className="flex items-center gap-2 bg-muted rounded-lg p-3">
@@ -227,17 +226,14 @@ const Plans = () => {
                   <button
                     onClick={handleCopyPix}
                     className="flex-shrink-0 bg-primary text-primary-foreground p-2 rounded-lg hover:bg-primary/80 transition-colors"
-                    title="Copiar chave Pix"
                   >
                     <Copy size={16} />
                   </button>
                 </div>
               </div>
-
               <p className="text-xs text-muted-foreground mb-6 leading-relaxed">
-                Após o pagamento, clique em "Já fiz o pagamento". Seu acesso será liberado em até 24 horas após confirmação.
+                Após o pagamento, clique em "Já fiz o pagamento". Seu acesso será liberado em até 24 horas.
               </p>
-
               <button
                 onClick={handleConfirmPayment}
                 disabled={isLoading}
@@ -256,14 +252,5 @@ const Plans = () => {
     </div>
   );
 };
-
-const FeatureItem = ({ text, disabled = false, highlight = false }: { text: string; disabled?: boolean; highlight?: boolean }) => (
-  <div className={`flex items-center gap-3 ${disabled ? "opacity-30" : "opacity-100"}`}>
-    <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${highlight ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
-      <Check size={14} />
-    </div>
-    <span className={`text-sm font-semibold ${highlight ? "text-foreground" : "text-muted-foreground"}`}>{text}</span>
-  </div>
-);
 
 export default Plans;

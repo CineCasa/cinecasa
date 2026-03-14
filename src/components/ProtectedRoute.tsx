@@ -55,8 +55,8 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  // Has no plan → go to plans
-  if (plan === "none" && location.pathname !== "/plans") {
+  // Profile not loaded yet or no plan → go to plans
+  if (!profile || (plan === "none" && location.pathname !== "/plans")) {
     return <Navigate to="/plans" replace />;
   }
 
