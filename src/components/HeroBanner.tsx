@@ -24,8 +24,8 @@ const HeroBanner = ({ filterCategory }: HeroBannerProps) => {
     ? categories?.filter(cat => {
         if (normalizedFilter === "cinema") return cat.id.startsWith("cinema-");
         if (normalizedFilter === "séries") return cat.id.startsWith("series-");
-        if (normalizedFilter === "filmes infantis") return cat.id === "kids-movies";
-        if (normalizedFilter?.startsWith("séries infant")) return cat.id === "kids-series";
+        if (normalizedFilter === "filmes infantis") return cat.id.startsWith("kids-movies");
+        if (normalizedFilter?.startsWith("séries infant")) return cat.id.startsWith("kids-series");
         return cat.title.toLowerCase().includes(normalizedFilter!);
       }).flatMap(cat => cat.items) || []
     : categories?.flatMap(cat => cat.items.slice(0, 2)) || [];
