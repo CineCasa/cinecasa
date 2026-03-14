@@ -10,7 +10,7 @@ const Series = () => {
   const seriesCategories = categories?.filter(cat => cat.id.startsWith("series-")) || [];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20 md:pb-0">
       <Navbar />
       <main className="pb-20">
         <HeroBanner filterCategory="Séries" />

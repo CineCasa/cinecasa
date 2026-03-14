@@ -83,7 +83,7 @@ const Index = () => {
   const pick5 = (items: ContentItem[]) => shuffleArray(items).slice(0, 5);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20 md:pb-0">
       <Navbar />
       <main className="pb-20">
         <HeroBanner />

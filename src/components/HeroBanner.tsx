@@ -24,8 +24,8 @@ const HeroBanner = ({ filterCategory }: HeroBannerProps) => {
     ? categories?.filter(cat => {
         if (normalizedFilter === "cinema") return cat.id.startsWith("cinema-");
         if (normalizedFilter === "séries") return cat.id.startsWith("series-");
-        if (normalizedFilter === "filmes infantis") return cat.id === "kids-movies";
-        if (normalizedFilter?.startsWith("séries infant")) return cat.id === "kids-series";
+        if (normalizedFilter === "filmes infantis") return cat.id.startsWith("kids-movies");
+        if (normalizedFilter?.startsWith("séries infant")) return cat.id.startsWith("kids-series");
         return cat.title.toLowerCase().includes(normalizedFilter!);
       }).flatMap(cat => cat.items) || []
     : categories?.flatMap(cat => cat.items.slice(0, 2)) || [];
@@ -115,9 +115,11 @@ const HeroBanner = ({ filterCategory }: HeroBannerProps) => {
           {showTrailer && trailerUrl ? (
             <div className="absolute inset-0 scale-[1.3] pointer-events-none">
               <iframe
-                src={trailerUrl.includes("?") ? `${trailerUrl}&controls=0&mute=1&autoplay=1&loop=1` : `${trailerUrl}?controls=0&mute=1&autoplay=1&loop=1`}
+                src={trailerUrl.includes("?") ? `${trailerUrl}&controls=0&mute=1&autoplay=1&loop=1&enablejsapi=1` : `${trailerUrl}?controls=0&mute=1&autoplay=1&loop=1&enablejsapi=1`}
                 className="w-full h-full object-cover"
-                allow="autoplay; encrypted-media; fullscreen"
+                allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+                allowFullScreen
+                style={{ border: "none" }}
               />
             </div>
           ) : (

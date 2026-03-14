@@ -2,8 +2,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { useState } from "react";
 import Index from "./pages/Index";
 import Cinema from "./pages/Cinema";
 import Series from "./pages/Series";
@@ -14,6 +14,7 @@ import DataLoader from "./pages/DataLoader";
 import Details from "./pages/Details";
 import Favorites from "./pages/Favorites";
 import Search from "./pages/Search";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import NetflixLoader from "./components/NetflixLoader";
 import Login from "./pages/Login";
@@ -21,28 +22,15 @@ import Plans from "./pages/Plans";
 import Admin from "./pages/Admin";
 import { AuthProvider } from "./components/AuthProvider";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { useUniversalNavigation } from "./hooks/useUniversalNavigation";
 
 import { motion, AnimatePresence } from "framer-motion";
 
 const queryClient = new QueryClient();
 
-const HomeRedirect = ({ children }: { children: React.ReactNode }) => {
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  useEffect(() => {
-    const hasRedirected = sessionStorage.getItem("initialRedirect");
-    if (!hasRedirected && location.pathname !== "/" && location.pathname !== "/login" && location.pathname !== "/plans") {
-       navigate("/", { replace: true });
-       sessionStorage.setItem("initialRedirect", "true");
-    }
-  }, [navigate, location.pathname]);
-
-  return <>{children}</>;
-};
-
 const AppRoutes = () => {
   const location = useLocation();
+  useUniversalNavigation();
   
   return (
     <AnimatePresence mode="wait">
@@ -56,7 +44,7 @@ const AppRoutes = () => {
         <Routes location={location}>
           <Route path="/login" element={<Login />} />
           <Route path="/plans" element={<Plans />} />
-          <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+          <Route path="/admin" element={<Admin />} />
           <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
           <Route path="/cinema" element={<ProtectedRoute><Cinema /></ProtectedRoute>} />
           <Route path="/series" element={<ProtectedRoute><Series /></ProtectedRoute>} />
@@ -66,6 +54,7 @@ const AppRoutes = () => {
           <Route path="/details/:type/:id" element={<ProtectedRoute><Details /></ProtectedRoute>} />
           <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
           <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/admin/data-loader" element={<DataLoader />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
@@ -88,9 +77,7 @@ const App = () => {
           </AnimatePresence>
           {!loading && (
             <BrowserRouter>
-              <HomeRedirect>
-                <AppRoutes />
-              </HomeRedirect>
+              <AppRoutes />
             </BrowserRouter>
           )}
         </AuthProvider>

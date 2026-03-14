@@ -1,31 +1,43 @@
 import { useState, useEffect, useRef } from "react";
-import { Search, Bell, User, Menu, X, LogOut } from "lucide-react";
+import { Search, User, LogOut, Home, Film, Tv, Radio, Baby, Heart, Menu, X, Settings } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthProvider";
-import { useSupabaseContent } from "@/hooks/useSupabaseContent";
 
 const navItems = [
-  { label: "Início", path: "/" },
-  { label: "Cinema", path: "/cinema" },
-  { label: "Séries", path: "/series" },
-  { label: "Tv ao Vivo", path: "/tv-live" },
-  { label: "Filmes Kids", path: "/kids-movies" },
-  { label: "Séries Kids", path: "/kids-series" },
-  { label: "Meus Favoritos", path: "/favorites" },
+  { label: "Início", path: "/", icon: Home },
+  { label: "Cinema", path: "/cinema", icon: Film },
+  { label: "Séries", path: "/series", icon: Tv },
+  { label: "TV ao Vivo", path: "/tv-live", icon: Radio },
+  { label: "Filmes Kids", path: "/kids-movies", icon: Baby },
+  { label: "Séries Kids", path: "/kids-series", icon: Baby },
+  { label: "Favoritos", path: "/favorites", icon: Heart },
+];
+
+// Mobile bottom bar - main items
+const mobileMainItems = [
+  { label: "Início", path: "/", icon: Home },
+  { label: "Cinema", path: "/cinema", icon: Film },
+  { label: "Séries", path: "/series", icon: Tv },
+  { label: "Busca", path: "/search", icon: Search },
+  { label: "Favoritos", path: "/favorites", icon: Heart },
+];
+
+const mobileMoreItems = [
+  { label: "TV ao Vivo", path: "/tv-live", icon: Radio },
+  { label: "Filmes Kids", path: "/kids-movies", icon: Baby },
+  { label: "Séries Kids", path: "/kids-series", icon: Baby },
+  { label: "Perfil", path: "/profile", icon: User },
 ];
 
 const Navbar = () => {
-  const { data: categories } = useSupabaseContent();
-  const totalContentCount = categories?.reduce((acc, cat) => acc + cat.items.length, 0) || 0;
-  
   const [scrolled, setScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const { signOut, user } = useAuth();
+  const { signOut, user, profile } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -60,169 +72,179 @@ const Navbar = () => {
     navigate("/login");
   };
 
-  const handleNavKeyDown = (e: React.KeyboardEvent, index: number) => {
-    const items = document.querySelectorAll('.nav-link-item');
-    if (e.key === "ArrowRight") {
-      (items[index + 1] as HTMLElement)?.focus();
-    } else if (e.key === "ArrowLeft") {
-      (items[index - 1] as HTMLElement)?.focus();
-    } else    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      // Tentar focar no Hero primeiro, se não houver, vai para o primeiro card
-      const heroBtn = document.querySelector('.hero-action-btn') as HTMLElement;
-      if (heroBtn) {
-        heroBtn.focus();
-      } else {
-        const firstCard = document.querySelector('[tabindex="0"]:not(.nav-link-item)') as HTMLElement;
-        firstCard?.focus();
-      }
-    }
-  };
+  const avatarUrl = profile?.avatar_url;
+  const displayName = profile?.display_name || user?.email?.split("@")[0] || "";
 
   return (
-    <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-colors duration-300 font-sans ${
-        scrolled ? "bg-[#0f171e] shadow-xl border-b border-white/5" : "bg-gradient-to-b from-[#0f171e]/90 to-transparent"
-      }`}
-    >
-      <div className="flex items-center justify-between px-4 sm:px-6 md:px-8 lg:px-12 h-16 sm:h-20">
-        {/* Logo and Main Nav Desktop */}
-        <div className="flex items-center gap-6 md:gap-10">
-          {/* Mobile menu toggle (Left side on Prime Video) */}
-          <button
-            className="p-1 -ml-1 text-white/80 hover:text-white transition-colors lg:hidden focus-visible rounded-sm"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
-          </button>
+    <>
+      {/* ===== DESKTOP/TV TOP BAR (≥768px) ===== */}
+      <nav
+        className={`hidden md:flex fixed top-0 left-0 right-0 z-50 transition-colors duration-300 font-sans ${
+          scrolled ? "bg-[hsl(var(--background))]/95 shadow-xl border-b border-border" : "bg-gradient-to-b from-[hsl(var(--background))]/90 to-transparent"
+        }`}
+      >
+        <div className="flex items-center justify-between w-full px-4 lg:px-12 h-16 lg:h-20">
+          <div className="flex items-center gap-6 lg:gap-10">
+            <Link to="/" className="flex flex-col items-start leading-none group">
+              <span className="text-2xl lg:text-3xl font-black tracking-tighter text-primary group-hover:text-foreground transition-colors">
+                CINECASA
+              </span>
+              <span className="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">
+                Entretenimento e lazer
+              </span>
+            </Link>
 
-          <Link to="/" className="flex flex-col items-start leading-none group">
-            <span className="text-2xl sm:text-3xl font-black tracking-tighter text-[#00A8E1] group-hover:text-white transition-colors">
-              CINECASA
-            </span>
-            <span className="text-[10px] sm:text-[11px] font-bold text-white/50 tracking-widest uppercase">
-              Entretenimento e lazer
-            </span>
-          </Link>
-
-          {/* Centralized Content Counter */}
-          <div className="absolute left-1/2 -translate-x-1/2 top-1 sm:top-2 hidden sm:flex flex-col items-center pointer-events-none">
-            <span className="text-[10px] font-black text-[#00A8E1] uppercase tracking-[0.2em] opacity-80">
-              Temos {totalContentCount} conteúdos
-            </span>
-            <div className="h-[2px] w-12 bg-gradient-to-r from-transparent via-[#00A8E1]/50 to-transparent mt-1" />
+            <ul className="flex items-center gap-1 lg:gap-4">
+              {navItems.map((item) => {
+                const isActive = location.pathname === item.path;
+                return (
+                  <li key={item.path} className="relative">
+                    <Link
+                      to={item.path}
+                      tabIndex={0}
+                      className={`nav-link-item text-sm lg:text-[15px] font-semibold transition-colors px-2 lg:px-3 py-2 rounded-md ${
+                        isActive ? "text-foreground bg-muted/50" : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+                      }`}
+                    >
+                      {item.label}
+                      {isActive && (
+                        <span className="absolute -bottom-[14px] left-2 right-2 h-[3px] bg-primary rounded-t-md" />
+                      )}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
 
-          {/* Desktop Nav */}
-          <ul className="hidden lg:flex items-center gap-6">
-            {navItems.map((item, idx) => {
-              const isActive = location.pathname === item.path;
-              return (
-                <li key={item.path} className="relative">
-                  <Link 
-                    to={item.path}
-                    onKeyDown={(e) => handleNavKeyDown(e, idx)}
-                    className={`nav-link-item text-[17px] font-semibold transition-colors px-2 py-1 rounded-md focus-visible ${
-                      isActive ? "text-white" : "text-[#aaaaaa] hover:text-white hover:bg-white/5"
-                    }`}
-                  >
-                    {item.label}
-                    {isActive && (
-                      <span className="absolute -bottom-[22px] left-0 right-0 h-1 bg-white rounded-t-md" />
-                    )}
+          <div className="flex items-center gap-2 lg:gap-4 text-muted-foreground">
+            {/* Search */}
+            <div className="flex items-center border border-transparent hover:border-border hover:bg-muted/30 rounded-full transition-all px-2 py-1 focus-within:border-primary/40 focus-within:bg-muted/30">
+              {searchOpen && (
+                <input
+                  autoFocus
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  placeholder="Busca"
+                  className="bg-transparent text-sm text-foreground placeholder:text-muted-foreground px-2 py-1 w-32 lg:w-48 outline-none"
+                  onBlur={() => { if (!searchQuery) setTimeout(() => setSearchOpen(false), 200); }}
+                  onKeyDown={(e) => { if (e.key === "Enter") setSearchOpen(false); }}
+                />
+              )}
+              <button onClick={() => setSearchOpen(!searchOpen)} className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-full" tabIndex={0}>
+                <Search size={20} />
+              </button>
+            </div>
+
+            {/* User Menu */}
+            <div className="relative" ref={menuRef}>
+              <button
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="p-1.5 text-muted-foreground hover:text-foreground transition-colors rounded-full flex items-center gap-2"
+                tabIndex={0}
+              >
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover border-2 border-primary/30" />
+                ) : (
+                  <User size={24} />
+                )}
+                <span className="hidden lg:inline text-xs truncate max-w-[100px] text-muted-foreground">{displayName}</span>
+              </button>
+
+              {userMenuOpen && (
+                <div className="absolute right-0 mt-2 w-52 bg-card border border-border rounded-lg shadow-2xl py-2 z-[60]">
+                  <div className="px-4 py-2 border-b border-border mb-1">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Logado como</p>
+                    <p className="text-xs text-foreground truncate font-semibold">{user?.email}</p>
+                  </div>
+                  <Link to="/profile" onClick={() => setUserMenuOpen(false)} className="w-full text-left px-4 py-3 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors flex items-center gap-3 text-sm">
+                    <Settings size={16} /> Configurações
                   </Link>
-                </li>
-              );
-            })}
-          </ul>
+                  <button onClick={handleLogout} className="w-full text-left px-4 py-3 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors flex items-center gap-3 text-sm">
+                    <LogOut size={16} /> Sair do Cinecasa
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* ===== MOBILE BOTTOM BAR (<768px) ===== */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[hsl(var(--background))]/95 backdrop-blur-lg border-t border-border">
+        <div className="flex items-center justify-around h-16 px-1">
+          {mobileMainItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.path || (item.path === "/search" && location.pathname === "/search");
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-colors min-w-[48px] ${
+                  isActive ? "text-primary" : "text-muted-foreground"
+                }`}
+              >
+                <Icon size={22} />
+                <span className="text-[10px] font-semibold">{item.label}</span>
+              </Link>
+            );
+          })}
+          {/* More button */}
+          <button
+            onClick={() => setMoreMenuOpen(!moreMenuOpen)}
+            className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-colors min-w-[48px] ${
+              moreMenuOpen ? "text-primary" : "text-muted-foreground"
+            }`}
+          >
+            <Menu size={22} />
+            <span className="text-[10px] font-semibold">Mais</span>
+          </button>
         </div>
 
-        {/* Right Actions */}
-        <div className="flex items-center gap-2 sm:gap-4 text-[#aaaaaa]">
-          {/* Search */}
-          <div className="flex items-center border border-transparent hover:border-white/20 hover:bg-white/5 rounded-full transition-all px-1 sm:px-2 py-1 focus-within:border-white/40 focus-within:bg-white/5">
-            {searchOpen && (
-              <input
-                autoFocus
-                value={searchQuery}
-                onChange={handleSearchChange}
-                placeholder="Busca"
-                className="bg-transparent text-sm sm:text-base text-white placeholder:text-[#aaaaaa] px-2 py-1 w-28 sm:w-48 outline-none"
-                onBlur={() => {
-                  if (!searchQuery) {
-                    setTimeout(() => setSearchOpen(false), 200);
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    setSearchOpen(false);
-                  }
-                }}
-              />
-            )}
-            <button
-              onClick={() => setSearchOpen(!searchOpen)}
-              className="p-2 text-white/80 hover:text-white transition-colors rounded-full focus-visible"
-            >
-              <Search size={22} />
-            </button>
-          </div>
-
-          {/* User Menu */}
-          <div className="relative" ref={menuRef}>
-            <button 
-              onClick={() => setUserMenuOpen(!userMenuOpen)}
-              className="user-menu-btn p-2 text-white/80 hover:text-white transition-colors rounded-full focus-visible flex items-center gap-2"
-            >
-              <User size={26} />
-              <span className="hidden sm:inline text-xs truncate max-w-[100px] text-white/60">
-                {user?.email?.split('@')[0]}
-              </span>
-            </button>
-
-            {userMenuOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-[#19232b] border border-white/10 rounded-lg shadow-2xl py-2 z-[60]">
-                <div className="px-4 py-2 border-b border-white/5 mb-1">
-                  <p className="text-[10px] text-white/40 uppercase tracking-wider font-bold">Logado como</p>
-                  <p className="text-xs text-white/80 truncate font-semibold">{user?.email}</p>
-                </div>
-                <button
-                  onClick={handleLogout}
-                  className="w-full text-left px-4 py-3 hover:bg-white/5 text-white/80 hover:text-white transition-colors flex items-center gap-3 text-sm"
-                >
-                  <LogOut size={16} />
-                  Sair do Cinecasa
-                </button>
+        {/* More menu popup */}
+        {moreMenuOpen && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setMoreMenuOpen(false)} />
+            <div className="absolute bottom-full left-0 right-0 bg-card border-t border-border rounded-t-2xl shadow-2xl z-50 p-4">
+              <div className="grid grid-cols-4 gap-4 mb-4">
+                {mobileMoreItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = location.pathname === item.path;
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      onClick={() => setMoreMenuOpen(false)}
+                      className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-colors ${
+                        isActive ? "bg-primary/20 text-primary" : "bg-muted/50 text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <Icon size={24} />
+                      <span className="text-[10px] font-bold">{item.label}</span>
+                    </Link>
+                  );
+                })}
               </div>
-            )}
-          </div>
+              <button
+                onClick={() => { handleLogout(); setMoreMenuOpen(false); }}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-destructive/10 text-destructive rounded-xl text-sm font-bold"
+              >
+                <LogOut size={16} /> Sair
+              </button>
+            </div>
+          </>
+        )}
+      </nav>
+
+      {/* Mobile top bar - just logo */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-gradient-to-b from-[hsl(var(--background))] to-transparent pointer-events-none">
+        <div className="flex items-center justify-between px-4 h-14 pointer-events-auto">
+          <Link to="/" className="flex flex-col items-start leading-none">
+            <span className="text-xl font-black tracking-tighter text-primary">CINECASA</span>
+          </Link>
         </div>
       </div>
-
-      {/* Mobile Menu Slide-down Prime Style */}
-      {mobileMenuOpen && (
-        <div className="lg:hidden bg-[#19232b] absolute top-[100%] left-0 w-full shadow-2xl border-b border-white/5">
-          <ul className="flex flex-col p-2 gap-1 max-h-[70vh] overflow-y-auto">
-            {navItems.map((item) => {
-              const isActive = location.pathname === item.path;
-              return (
-                <li key={item.path}>
-                  <Link
-                    to={item.path}
-                    className={`w-full text-left text-lg font-semibold px-4 py-3 rounded-lg transition-colors block ${
-                      isActive ? "bg-white/10 text-white" : "text-[#aaaaaa] hover:text-white hover:bg-white/5"
-                    }`}
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      )}
-    </nav>
+    </>
   );
 };
 
