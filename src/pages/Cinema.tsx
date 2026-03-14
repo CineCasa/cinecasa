@@ -3,18 +3,35 @@ import HeroBanner from "@/components/HeroBanner";
 import ContentRow from "@/components/ContentRow";
 import Footer from "@/components/Footer";
 import { useSupabaseContent } from "@/hooks/useSupabaseContent";
+import { useMemo } from "react";
+
+const CINEMA_CATEGORY_ORDER = [
+  "Lançamento 2026", "Lançamento 2025", "Ação", "Aventura", "Anime", "Animação",
+  "Comédia", "Drama", "Dorama", "Clássicos", "Negritude", "Crime", "Policial",
+  "Família", "Musical", "Documentário", "Faroeste", "Ficção", "Nacional",
+  "Religioso", "Romance", "Terror", "Suspense", "Adulto"
+];
 
 const Cinema = () => {
   const { data: categories, isLoading } = useSupabaseContent();
 
-  // Filtra apenas categorias que começam com "cinema-" (definido no hook)
-  // As categorias agora seguem o padrão centralizado do hook
-  const cinemaCategories = categories?.filter(cat => cat.id.startsWith("cinema-")) || [];
+  const cinemaCategories = useMemo(() => {
+    const all = categories?.filter(cat => cat.id.startsWith("cinema-")) || [];
+    
+    // Sort by fixed order
+    const orderMap = new Map(CINEMA_CATEGORY_ORDER.map((name, idx) => [name.toLowerCase(), idx]));
+    
+    return [...all].sort((a, b) => {
+      const aIdx = orderMap.get(a.title.toLowerCase()) ?? 999;
+      const bIdx = orderMap.get(b.title.toLowerCase()) ?? 999;
+      return aIdx - bIdx;
+    });
+  }, [categories]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20 md:pb-0">
       <Navbar />
-      <main className="pb-20">
+      <main>
         <HeroBanner filterCategory="Cinema" />
         <div className="relative z-10 pt-16 -mt-10">
           {isLoading ? (
