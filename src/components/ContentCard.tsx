@@ -211,12 +211,14 @@ const ContentCard = ({ item, index, isLast = false, showProgress = false }: Cont
               {showTrailer && trailerUrl ? (
                 <iframe
                   src={trailerUrl.includes("?")
-                    ? `${trailerUrl}&autoplay=1&mute=1&controls=0&loop=1`
-                    : `${trailerUrl}?autoplay=1&mute=1&controls=0&loop=1`}
+                    ? `${trailerUrl}&autoplay=1&mute=1&controls=0&loop=1&enablejsapi=1`
+                    : `${trailerUrl}?autoplay=1&mute=1&controls=0&loop=1&enablejsapi=1`}
                   className="absolute inset-0 w-full h-full object-cover scale-[1.05]"
-                  allow="autoplay; fullscreen; encrypted-media"
+                  allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+                  allowFullScreen
                   title={item.title}
-                  frameBorder="0"
+                  style={{ border: "none" }}
+                  loading="lazy"
                 />
               ) : (
                 <>

@@ -115,9 +115,11 @@ const HeroBanner = ({ filterCategory }: HeroBannerProps) => {
           {showTrailer && trailerUrl ? (
             <div className="absolute inset-0 scale-[1.3] pointer-events-none">
               <iframe
-                src={trailerUrl.includes("?") ? `${trailerUrl}&controls=0&mute=1&autoplay=1&loop=1` : `${trailerUrl}?controls=0&mute=1&autoplay=1&loop=1`}
+                src={trailerUrl.includes("?") ? `${trailerUrl}&controls=0&mute=1&autoplay=1&loop=1&enablejsapi=1` : `${trailerUrl}?controls=0&mute=1&autoplay=1&loop=1&enablejsapi=1`}
                 className="w-full h-full object-cover"
-                allow="autoplay; encrypted-media; fullscreen"
+                allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+                allowFullScreen
+                style={{ border: "none" }}
               />
             </div>
           ) : (
